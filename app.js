@@ -2,7 +2,14 @@
   'use strict';
 
   const STORAGE_KEY = 'monitor-comparison:monitors:v1';
+  const ALIGN_KEY = 'monitor-comparison:alignment:v1';
   const COLOR_SLOTS = 8;
+
+  const ALIGNMENTS = [
+    'top-left', 'top-center', 'top-right',
+    'center-left', 'center', 'center-right',
+    'bottom-left', 'bottom-center', 'bottom-right',
+  ];
 
   const PRESET_DEFAULTS = [
     { name: 'QHD 31.5"', resWidth: 2560, resHeight: 1440, diagonal: 31.5 },
@@ -16,6 +23,7 @@
     stageHint: document.getElementById('stage-hint'),
     list: document.getElementById('monitor-list'),
     tbody: document.getElementById('details-tbody'),
+    alignGrid: document.getElementById('align-grid'),
     addBtn: document.getElementById('add-btn'),
     modalOverlay: document.getElementById('modal-overlay'),
     modalTitle: document.getElementById('modal-title'),
@@ -34,6 +42,16 @@
 
   let monitors = loadMonitors();
   saveMonitors();
+  let alignment = loadAlignment();
+
+  function loadAlignment() {
+    const raw = localStorage.getItem(ALIGN_KEY);
+    return ALIGNMENTS.includes(raw) ? raw : 'bottom-left';
+  }
+
+  function saveAlignment() {
+    localStorage.setItem(ALIGN_KEY, alignment);
+  }
 
   function uid() {
     return (crypto.randomUUID ? crypto.randomUUID() : `m-${Date.now()}-${Math.random().toString(16).slice(2)}`);
@@ -86,9 +104,10 @@
     const widthIn = m.diagonal * (m.resWidth / diagPx);
     const heightIn = m.diagonal * (m.resHeight / diagPx);
     const ppi = diagPx / m.diagonal;
+    const pitchMm = 25.4 / ppi;
     const g = gcd(m.resWidth, m.resHeight) || 1;
     const ratio = `${m.resWidth / g}:${m.resHeight / g}`;
-    return { widthIn, heightIn, ppi, ratio };
+    return { widthIn, heightIn, ppi, pitchMm, ratio };
   }
 
   function fmt(n, digits = 1) {
@@ -99,7 +118,45 @@
     renderLegend();
     renderList();
     renderTable();
+    renderAlign();
     renderStage();
+  }
+
+  const ALIGN_LABELS = {
+    'top-left': 'Top left', 'top-center': 'Top center', 'top-right': 'Top right',
+    'center-left': 'Center left', 'center': 'Center', 'center-right': 'Center right',
+    'bottom-left': 'Bottom left', 'bottom-center': 'Bottom center', 'bottom-right': 'Bottom right',
+  };
+
+  function renderAlign() {
+    if (els.alignGrid.childElementCount) return;
+    ALIGNMENTS.forEach(key => {
+      const cell = document.createElement('button');
+      cell.type = 'button';
+      cell.className = 'align-cell';
+      cell.setAttribute('aria-label', ALIGN_LABELS[key]);
+      cell.setAttribute('aria-pressed', String(key === alignment));
+      cell.dataset.align = key;
+      const dot = document.createElement('span');
+      dot.className = 'align-dot';
+      cell.appendChild(dot);
+      cell.addEventListener('click', () => {
+        alignment = key;
+        saveAlignment();
+        updateAlignSelection();
+        renderStage();
+      });
+      els.alignGrid.appendChild(cell);
+    });
+    updateAlignSelection();
+  }
+
+  function updateAlignSelection() {
+    [...els.alignGrid.children].forEach(cell => {
+      const isSelected = cell.dataset.align === alignment;
+      cell.classList.toggle('is-selected', isSelected);
+      cell.setAttribute('aria-pressed', String(isSelected));
+    });
   }
 
   function renderLegend() {
@@ -192,7 +249,7 @@
       const tr = document.createElement('tr');
       tr.className = 'empty-row';
       const td = document.createElement('td');
-      td.colSpan = 8;
+      td.colSpan = 9;
       td.textContent = 'No monitors added yet.';
       tr.appendChild(td);
       els.tbody.appendChild(tr);
@@ -210,6 +267,7 @@
         <td>${fmt(p.widthIn)} in</td>
         <td>${fmt(p.heightIn)} in</td>
         <td>${Math.round(p.ppi)}</td>
+        <td>${fmt(p.pitchMm, 3)} mm</td>
       `;
       els.tbody.appendChild(tr);
     });
@@ -244,6 +302,18 @@
     const vbH = maxH + padTop + padBottom;
     els.svg.setAttribute('viewBox', `0 0 ${vbW} ${vbH}`);
 
+    const [vAlign, hAlign] = alignment === 'center' ? ['center', 'center'] : alignment.split('-');
+    const boxX = (widthIn) => {
+      if (hAlign === 'left') return padLeft;
+      if (hAlign === 'right') return padLeft + (maxW - widthIn);
+      return padLeft + (maxW - widthIn) / 2;
+    };
+    const boxY = (heightIn) => {
+      if (vAlign === 'top') return padTop;
+      if (vAlign === 'bottom') return padTop + (maxH - heightIn);
+      return padTop + (maxH - heightIn) / 2;
+    };
+
     const sorted = [...items].sort((a, b) => (b.widthIn * b.heightIn) - (a.widthIn * a.heightIn));
 
     const labelsLayer = document.createElement('div');
@@ -257,8 +327,8 @@
     const labelSpots = [];
 
     sorted.forEach(({ m, widthIn, heightIn }) => {
-      const x = padLeft;
-      const yTop = (vbH - padBottom) - heightIn;
+      const x = boxX(widthIn);
+      const yTop = boxY(heightIn);
       const color = colorVar(m.colorSlot ?? 0);
 
       const halo = document.createElementNS(SVG_NS, 'rect');
