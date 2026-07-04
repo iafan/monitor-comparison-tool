@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Monitor Size Comparison</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+  <header class="app-header">
+    <h1>Monitor Size Comparison</h1>
+    <button id="add-btn" class="btn btn-primary" type="button">+ Add monitor</button>
+  </header>
+
+  <section class="legend" id="legend" aria-label="Monitor legend"></section>
+
+  <section class="stage-wrap">
+    <div class="stage" id="stage">
+      <svg id="svg" viewBox="0 0 100 100" preserveAspectRatio="xMinYMax meet" role="img" aria-label="Monitor size comparison diagram"></svg>
+    </div>
+    <p class="stage-hint" id="stage-hint">Add a monitor to see it rendered to scale.</p>
+  </section>
+
+  <section class="list-wrap">
+    <h2>Monitors</h2>
+    <div id="monitor-list" class="monitor-list"></div>
+  </section>
+
+  <section class="table-wrap">
+    <h2>Details</h2>
+    <div class="table-scroll">
+      <table id="details-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Name</th>
+            <th>Resolution</th>
+            <th>Ratio</th>
+            <th>Diagonal</th>
+            <th>Width</th>
+            <th>Height</th>
+            <th>PPI</th>
+          </tr>
+        </thead>
+        <tbody id="details-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<div class="modal-overlay" id="modal-overlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <h2 id="modal-title">Add monitor</h2>
+    <form id="monitor-form">
+      <input type="hidden" id="monitor-id">
+
+      <label class="field">
+        <span>Name</span>
+        <input type="text" id="f-name" required maxlength="40" placeholder="e.g. QHD 27&quot;">
+      </label>
+
+      <label class="field">
+        <span>Preset</span>
+        <select id="f-preset">
+          <option value="">Custom&hellip;</option>
+          <option value="1920x1080">FHD &mdash; 1920 &times; 1080</option>
+          <option value="2560x1440">QHD &mdash; 2560 &times; 1440</option>
+          <option value="3440x1440">WQHD (UltraWide) &mdash; 3440 &times; 1440</option>
+          <option value="3840x2160">4K UHD &mdash; 3840 &times; 2160</option>
+          <option value="5120x1440">DQHD (Super UltraWide) &mdash; 5120 &times; 1440</option>
+          <option value="5120x2880">5K &mdash; 5120 &times; 2880</option>
+        </select>
+      </label>
+
+      <div class="field-row">
+        <label class="field">
+          <span>Res. width (px)</span>
+          <input type="number" id="f-width" required min="1" step="1" inputmode="numeric">
+        </label>
+        <label class="field">
+          <span>Res. height (px)</span>
+          <input type="number" id="f-height" required min="1" step="1" inputmode="numeric">
+        </label>
+      </div>
+
+      <label class="field">
+        <span>Diagonal size (inches)</span>
+        <input type="number" id="f-diagonal" required min="1" step="0.1" inputmode="decimal" placeholder="e.g. 31.5">
+      </label>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="cancel-btn">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="save-btn">Add monitor</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
