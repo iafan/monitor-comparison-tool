@@ -1,5 +1,12 @@
-import { ALIGN_KEY, ALIGNMENTS, DEFAULT_MONITORS, STORAGE_KEY } from '../constants'
-import type { Alignment, Monitor } from '../types'
+import {
+  ALIGN_KEY,
+  ALIGNMENTS,
+  DEFAULT_MONITORS,
+  STORAGE_KEY,
+  TOPVIEW_ALIGN_KEY,
+  TOPVIEW_ALIGNS,
+} from '../constants'
+import type { Alignment, Monitor, TopViewAlign } from '../types'
 
 export function uid(): string {
   return crypto.randomUUID
@@ -35,4 +42,13 @@ export function loadAlignment(): Alignment {
 
 export function saveAlignment(alignment: Alignment): void {
   localStorage.setItem(ALIGN_KEY, alignment)
+}
+
+export function loadTopViewAlign(): TopViewAlign {
+  const raw = localStorage.getItem(TOPVIEW_ALIGN_KEY)
+  return (TOPVIEW_ALIGNS as string[]).includes(raw ?? '') ? (raw as TopViewAlign) : 'front'
+}
+
+export function saveTopViewAlign(align: TopViewAlign): void {
+  localStorage.setItem(TOPVIEW_ALIGN_KEY, align)
 }

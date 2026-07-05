@@ -1,7 +1,8 @@
-import type { Alignment, Monitor } from './types'
+import type { Alignment, Monitor, TopViewAlign } from './types'
 
 export const STORAGE_KEY = 'monitor-comparison:monitors:v1'
 export const ALIGN_KEY = 'monitor-comparison:alignment:v1'
+export const TOPVIEW_ALIGN_KEY = 'monitor-comparison:topview-align:v1'
 export const COLOR_SLOTS = 8
 
 export const ALIGNMENTS: Alignment[] = [
@@ -26,6 +27,14 @@ export const ALIGN_LABELS: Record<Alignment, string> = {
   'bottom-left': 'Bottom left',
   'bottom-center': 'Bottom center',
   'bottom-right': 'Bottom right',
+}
+
+export const TOPVIEW_ALIGNS: TopViewAlign[] = ['back', 'center', 'front']
+
+export const TOPVIEW_ALIGN_LABELS: Record<TopViewAlign, string> = {
+  back: 'Top view: align back (behind)',
+  center: 'Top view: align center',
+  front: 'Top view: align front (nearest viewer)',
 }
 
 export interface Preset {

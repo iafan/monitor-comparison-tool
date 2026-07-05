@@ -21,6 +21,14 @@ export type Alignment =
   | 'bottom-center'
   | 'bottom-right'
 
+/**
+ * Vertical alignment of curvature arcs in the top view:
+ * - back: apex (screen center, farthest from viewer) aligned
+ * - center: arcs' vertical midpoints aligned
+ * - front: edges (closest to viewer) aligned
+ */
+export type TopViewAlign = 'back' | 'center' | 'front'
+
 /** The editable fields of a monitor — everything the form collects. */
 export type MonitorInput = Pick<
   Monitor,
