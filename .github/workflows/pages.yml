@@ -17,25 +17,27 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
   deploy:
+    needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - name: Stage site files
-        run: |
-          mkdir -p dist
-          cp index.html styles.css app.js dist/
-          # Cache-bust styles.css/app.js so browsers don't serve a stale
-          # script alongside a freshly-fetched index.html.
-          sha="${GITHUB_SHA::8}"
-          sed -i "s/styles\.css\"/styles.css?v=${sha}\"/" dist/index.html
-          sed -i "s/app\.js\"/app.js?v=${sha}\"/" dist/index.html
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
       - id: deployment
         uses: actions/deploy-pages@v4

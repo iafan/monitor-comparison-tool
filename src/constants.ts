@@ -1,0 +1,55 @@
+import type { Alignment, Monitor } from './types'
+
+export const STORAGE_KEY = 'monitor-comparison:monitors:v1'
+export const ALIGN_KEY = 'monitor-comparison:alignment:v1'
+export const COLOR_SLOTS = 8
+
+export const ALIGNMENTS: Alignment[] = [
+  'top-left',
+  'top-center',
+  'top-right',
+  'center-left',
+  'center',
+  'center-right',
+  'bottom-left',
+  'bottom-center',
+  'bottom-right',
+]
+
+export const ALIGN_LABELS: Record<Alignment, string> = {
+  'top-left': 'Top left',
+  'top-center': 'Top center',
+  'top-right': 'Top right',
+  'center-left': 'Center left',
+  center: 'Center',
+  'center-right': 'Center right',
+  'bottom-left': 'Bottom left',
+  'bottom-center': 'Bottom center',
+  'bottom-right': 'Bottom right',
+}
+
+export interface Preset {
+  label: string
+  resWidth: number
+  resHeight: number
+}
+
+export const PRESETS: Preset[] = [
+  { label: 'FHD — 1920 × 1080', resWidth: 1920, resHeight: 1080 },
+  { label: 'QHD — 2560 × 1440', resWidth: 2560, resHeight: 1440 },
+  { label: 'WQHD (UltraWide) — 3440 × 1440', resWidth: 3440, resHeight: 1440 },
+  { label: '4K UHD — 3840 × 2160', resWidth: 3840, resHeight: 2160 },
+  { label: 'DQHD (Super UltraWide) — 5120 × 1440', resWidth: 5120, resHeight: 1440 },
+  { label: '5K — 5120 × 2880', resWidth: 5120, resHeight: 2880 },
+]
+
+/** Seeded on first load; QHD 31.5" and WQHD 34" as requested. */
+export const DEFAULT_MONITORS: Omit<Monitor, 'id'>[] = [
+  { name: 'QHD 31.5"', resWidth: 2560, resHeight: 1440, diagonal: 31.5, visible: true, colorSlot: 0 },
+  { name: 'WQHD 34"', resWidth: 3440, resHeight: 1440, diagonal: 34, visible: true, colorSlot: 1 },
+]
+
+/** Maps a monitor's color slot to one of the eight categorical palette tokens. */
+export function seriesColor(slot: number): string {
+  return `var(--series-${(slot % COLOR_SLOTS) + 1})`
+}
