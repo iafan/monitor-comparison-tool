@@ -223,10 +223,19 @@ export function MonitorCheck() {
               className="flex w-full cursor-pointer flex-col gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] p-2 text-left"
             >
               <span
-                className="block h-20 w-full rounded-lg border border-[var(--border)]"
+                className={`relative block h-20 w-full overflow-hidden rounded-lg ${
+                  p.fill ? 'border border-[var(--border)]' : ''
+                }`}
                 style={swatchStyle(p)}
                 aria-hidden="true"
-              />
+              >
+                {p.render === 'gamma' && (
+                  <span
+                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+                    style={{ width: '38%', height: '38%', background: GAMMA_PATCH }}
+                  />
+                )}
+              </span>
               <span className="px-1 text-sm font-semibold text-[var(--text-primary)]">{p.label}</span>
               <span className="px-1 pb-1 text-xs text-[var(--text-muted)]">{p.hint}</span>
             </button>

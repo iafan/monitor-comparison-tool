@@ -16,13 +16,17 @@ function GeometryCanvas() {
 
     const draw = () => {
       const dpr = window.devicePixelRatio || 1
-      const rect = parent.getBoundingClientRect()
-      const w = Math.max(1, Math.round(rect.width * dpr))
-      const h = Math.max(1, Math.round(rect.height * dpr))
+      // Integer CSS dimensions (not the fractional getBoundingClientRect) so the
+      // far right/bottom edge lands exactly on device pixels — otherwise the
+      // outline there falls on a sub-pixel and disappears.
+      const cssW = parent.clientWidth
+      const cssH = parent.clientHeight
+      const w = Math.max(1, Math.round(cssW * dpr))
+      const h = Math.max(1, Math.round(cssH * dpr))
       canvas.width = w
       canvas.height = h
-      canvas.style.width = `${rect.width}px`
-      canvas.style.height = `${rect.height}px`
+      canvas.style.width = `${cssW}px`
+      canvas.style.height = `${cssH}px`
       const ctx = canvas.getContext('2d')
       if (!ctx) return
 
@@ -131,10 +135,8 @@ export function MonitorGeometry() {
   return (
     <section>
       <p className="mb-5 text-sm text-[var(--text-secondary)]">
-        A full-screen crosshatch for checking display geometry — straight edges, linearity,
-        pincushion/barrel distortion, centering, and aspect (the circles should look round). The
-        edge outline reveals any overscan clipping. Click the card to go full screen;{' '}
-        <kbd>Esc</kbd> or click to exit.
+        Full-screen patterns for checking display geometry — edges, linearity, centering, and
+        overscan. Pick a card to go full screen; <kbd>Esc</kbd> or click to exit.
       </p>
 
       <button
