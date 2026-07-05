@@ -73,7 +73,7 @@ export function savePreferences(prefs: Preferences): void {
 
 export function loadTool(): Tool {
   const raw = localStorage.getItem(TOOL_KEY)
-  return raw === 'comparison' || raw === 'check' ? raw : 'comparison'
+  return raw === 'comparison' || raw === 'check' || raw === 'geometry' ? raw : 'comparison'
 }
 
 export function saveTool(tool: Tool): void {

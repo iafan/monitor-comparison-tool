@@ -10,15 +10,28 @@ interface Pattern {
   fill?: string
   /** Line patterns render a split CSS-px vs device-px comparison instead. */
   lines?: Orientation
+  /** Composite screens rendered by a dedicated component. */
+  render?: 'gradient' | 'gamma'
 }
+
+/**
+ * 1px black/white stripes average to 50% of white's *physical* luminance.
+ * Under sRGB gamma (~2.2) the solid gray emitting that luminance is ~188/255,
+ * not 128 — so a patch of this value melts into the stripes only when the
+ * display's gamma is correct. That's what makes it a gamma check.
+ */
+const GAMMA_PATCH = '#bcbcbc'
 
 const PATTERNS: Pattern[] = [
   { id: 'white', label: 'White', hint: 'Dead/stuck pixels, backlight bleed, dust', fill: '#ffffff' },
+  { id: 'black', label: 'Black', hint: 'Stuck (lit) pixels, backlight bleed', fill: '#000000' },
   { id: 'red', label: 'Red', hint: 'Subpixel faults, uniformity', fill: '#ff0000' },
   { id: 'green', label: 'Green', hint: 'Subpixel faults, uniformity', fill: '#00ff00' },
   { id: 'blue', label: 'Blue', hint: 'Subpixel faults, uniformity', fill: '#0000ff' },
   { id: 'vlines', label: 'Vertical lines (1px)', hint: 'CSS px vs device px — top / bottom', lines: 'vertical' },
   { id: 'hlines', label: 'Horizontal lines (1px)', hint: 'CSS px vs device px — left / right', lines: 'horizontal' },
+  { id: 'gradient', label: 'Gradient', hint: 'Banding & bit depth — stepped vs smooth', render: 'gradient' },
+  { id: 'gamma', label: 'Gamma', hint: 'Patch melts into stripes at correct gamma', render: 'gamma' },
 ]
 
 /** CSS-pixel repeating stripes: 1px black, 1px white. */
@@ -28,7 +41,10 @@ function cssStripes(orientation: Orientation): string {
 }
 
 function swatchStyle(p: Pattern): React.CSSProperties {
-  return p.fill ? { background: p.fill } : { background: cssStripes(p.lines!) }
+  if (p.fill) return { background: p.fill }
+  if (p.render === 'gradient') return { background: 'linear-gradient(to right, #000, #fff)' }
+  if (p.render === 'gamma') return { background: cssStripes('vertical') }
+  return { background: cssStripes(p.lines!) }
 }
 
 /**
@@ -103,6 +119,34 @@ function SplitStripes({ orientation, showLabels }: { orientation: Orientation; s
         <DeviceStripes orientation={orientation} />
         <HalfLabel text="Device px" show={showLabels} />
       </div>
+    </div>
+  )
+}
+
+/** Top: 21 stepped grayscale bands (0–100% in 5% steps). Bottom: smooth ramp. */
+function GradientScreen() {
+  const bands = Array.from({ length: 21 }, (_, i) => Math.round((i / 20) * 255))
+  return (
+    <div className="flex h-full w-full flex-col">
+      <div className="flex flex-1">
+        {bands.map((v, i) => (
+          <div key={i} className="flex-1" style={{ background: `rgb(${v}, ${v}, ${v})` }} />
+        ))}
+      </div>
+      <div className="flex-1" style={{ background: 'linear-gradient(to right, #000, #fff)' }} />
+    </div>
+  )
+}
+
+/** 1px stripes with a centered ~73% gray patch that vanishes at correct gamma. */
+function GammaScreen() {
+  return (
+    <div className="relative h-full w-full bg-white">
+      <DeviceStripes orientation="vertical" />
+      <div
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+        style={{ width: '25%', height: '25%', background: GAMMA_PATCH }}
+      />
     </div>
   )
 }
@@ -201,6 +245,8 @@ export function MonitorCheck() {
         aria-label={current ? `${current.label} test pattern` : undefined}
       >
         {current?.lines && <SplitStripes orientation={current.lines} showLabels={showHint} />}
+        {current?.render === 'gradient' && <GradientScreen />}
+        {current?.render === 'gamma' && <GammaScreen />}
 
         {active !== null && (
           <div

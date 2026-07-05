@@ -1,5 +1,5 @@
 /** Which tool is active in the top-level tool selector. */
-export type Tool = 'comparison' | 'check'
+export type Tool = 'comparison' | 'check' | 'geometry'
 
 /** Explicit color-scheme choice, persisted so it overrides the system default. */
 export type Theme = 'light' | 'dark'
