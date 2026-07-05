@@ -43,13 +43,6 @@ function cssStripes(orientation: Orientation): string {
 /** Stepped grayscale bands, 0–100% in 5% steps (21 values), shared by the tile and the screen. */
 const GRAD_BANDS = Array.from({ length: 21 }, (_, i) => Math.round((i / 20) * 255))
 
-function swatchStyle(p: Pattern): React.CSSProperties {
-  if (p.fill) return { background: p.fill }
-  if (p.render === 'gradient') return { background: 'linear-gradient(to right, #000, #fff)' }
-  if (p.render === 'gamma') return { background: cssStripes('vertical') }
-  return { background: cssStripes(p.lines!) }
-}
-
 /**
  * Paints alternating 1-device-pixel stripes on a canvas backed at the true
  * device resolution, so on HiDPI panels these are genuinely 1px wide (unlike
@@ -153,6 +146,19 @@ function GammaScreen() {
   )
 }
 
+/**
+ * The single renderer for a pattern, used by both the preview tile and the
+ * full-screen surface — it fills whatever container it's in, so the tile is a
+ * true miniature screen (no scaling), not a separate approximation.
+ */
+function PatternContent({ pattern, showLabels }: { pattern: Pattern; showLabels: boolean }) {
+  if (pattern.fill) return <div className="h-full w-full" style={{ background: pattern.fill }} />
+  if (pattern.lines) return <SplitStripes orientation={pattern.lines} showLabels={showLabels} />
+  if (pattern.render === 'gradient') return <GradientScreen />
+  if (pattern.render === 'gamma') return <GammaScreen />
+  return null
+}
+
 export function MonitorCheck() {
   const [active, setActive] = useState<number | null>(null)
   const [showHint, setShowHint] = useState(true)
@@ -228,28 +234,9 @@ export function MonitorCheck() {
                 className={`relative block h-20 w-full overflow-hidden rounded-lg ${
                   p.fill ? 'border border-[var(--border)]' : ''
                 }`}
-                style={swatchStyle(p)}
                 aria-hidden="true"
               >
-                {p.render === 'gamma' && (
-                  <span
-                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-                    style={{ width: '38%', height: '38%', background: GAMMA_PATCH }}
-                  />
-                )}
-                {p.render === 'gradient' && (
-                  <>
-                    <span className="absolute inset-x-0 top-0 flex h-1/2">
-                      {GRAD_BANDS.map((v, i) => (
-                        <span key={i} className="h-full flex-1" style={{ background: `rgb(${v},${v},${v})` }} />
-                      ))}
-                    </span>
-                    <span
-                      className="absolute inset-x-0 bottom-0 h-1/2"
-                      style={{ background: 'linear-gradient(to right, #000, #fff)' }}
-                    />
-                  </>
-                )}
+                <PatternContent pattern={p} showLabels={false} />
               </span>
               <span className="px-1 text-sm font-semibold text-[var(--text-primary)]">{p.label}</span>
               <span className="px-1 pb-1 text-xs text-[var(--text-muted)]">{p.hint}</span>
@@ -263,14 +250,11 @@ export function MonitorCheck() {
         ref={surfaceRef}
         onMouseMove={active !== null ? pokeHint : undefined}
         onClick={active !== null ? () => step(1) : undefined}
-        className={active === null ? 'hidden' : 'fixed inset-0 z-50 h-full w-full cursor-none'}
-        style={current?.fill ? { background: current.fill } : undefined}
+        className={active === null ? 'hidden' : 'fixed inset-0 z-50 h-full w-full cursor-none bg-black'}
         role={active !== null ? 'img' : undefined}
         aria-label={current ? `${current.label} test pattern` : undefined}
       >
-        {current?.lines && <SplitStripes orientation={current.lines} showLabels={showHint} />}
-        {current?.render === 'gradient' && <GradientScreen />}
-        {current?.render === 'gamma' && <GammaScreen />}
+        {active !== null && current && <PatternContent pattern={current} showLabels={showHint} />}
 
         {active !== null && (
           <div
