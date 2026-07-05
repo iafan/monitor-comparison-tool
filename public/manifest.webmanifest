@@ -1,6 +1,6 @@
 {
-  "name": "Monitor Size Comparison",
-  "short_name": "Monitors",
+  "name": "Monitorture",
+  "short_name": "Monitorture",
   "description": "Compare monitor sizes visually — different displays rendered to scale as overlapping boxes.",
   "start_url": ".",
   "scope": ".",
