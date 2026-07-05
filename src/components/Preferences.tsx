@@ -16,28 +16,55 @@ const labelClass = 'flex flex-col gap-1 text-sm text-[var(--text-secondary)]'
 export function Preferences({ preferences, onChange }: Props) {
   const { unit, deskEnabled, deskWidth, deskDepth, deskX, deskY } = preferences
 
-  // Desk fields are edited in the current unit; canonical storage stays in inches.
+  // Inputs keep their own editable string so the field can be blanked while
+  // typing; the stored value only updates from valid input, and blur normalizes
+  // the text back to the committed (and, for percents, clamped) value.
   const [widthStr, setWidthStr] = useState(String(roundToUnit(deskWidth, unit)))
   const [depthStr, setDepthStr] = useState(String(roundToUnit(deskDepth, unit)))
+  const [xStr, setXStr] = useState(String(deskX))
+  const [yStr, setYStr] = useState(String(deskY))
 
-  // Re-sync the visible values when the unit changes (or desk dims change elsewhere).
+  // Re-sync the desk-size text when the unit changes (percents are unit-free).
   useEffect(() => {
     setWidthStr(String(roundToUnit(deskWidth, unit)))
     setDepthStr(String(roundToUnit(deskDepth, unit)))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unit])
 
-  const commitDesk = (raw: string, key: 'deskWidth' | 'deskDepth') => {
+  const changeDesk = (raw: string, key: 'deskWidth' | 'deskDepth', set: (s: string) => void) => {
+    set(raw)
     const num = Number(raw)
-    if (raw !== '' && Number.isFinite(num) && num > 0) {
-      onChange({ [key]: toInches(num, unit) })
-    }
+    if (raw !== '' && Number.isFinite(num) && num > 0) onChange({ [key]: toInches(num, unit) })
   }
 
-  const commitPercent = (raw: string, key: 'deskX' | 'deskY') => {
-    if (raw === '') return
+  const blurDesk = (
+    raw: string,
+    key: 'deskWidth' | 'deskDepth',
+    current: number,
+    set: (s: string) => void,
+  ) => {
     const num = Number(raw)
-    if (Number.isFinite(num)) onChange({ [key]: Math.min(100, Math.max(0, num)) })
+    const inches = raw !== '' && Number.isFinite(num) && num > 0 ? toInches(num, unit) : current
+    onChange({ [key]: inches })
+    set(String(roundToUnit(inches, unit)))
+  }
+
+  const changePercent = (raw: string, key: 'deskX' | 'deskY', set: (s: string) => void) => {
+    set(raw)
+    const num = Number(raw)
+    if (raw !== '' && Number.isFinite(num)) onChange({ [key]: Math.min(100, Math.max(0, num)) })
+  }
+
+  const blurPercent = (
+    raw: string,
+    key: 'deskX' | 'deskY',
+    current: number,
+    set: (s: string) => void,
+  ) => {
+    const num = Number(raw)
+    const value = raw !== '' && Number.isFinite(num) ? Math.min(100, Math.max(0, num)) : current
+    onChange({ [key]: value })
+    set(String(value))
   }
 
   return (
@@ -99,10 +126,8 @@ export function Preferences({ preferences, onChange }: Props) {
                   step="any"
                   inputMode="decimal"
                   value={widthStr}
-                  onChange={(e) => {
-                    setWidthStr(e.target.value)
-                    commitDesk(e.target.value, 'deskWidth')
-                  }}
+                  onChange={(e) => changeDesk(e.target.value, 'deskWidth', setWidthStr)}
+                  onBlur={(e) => blurDesk(e.target.value, 'deskWidth', deskWidth, setWidthStr)}
                   className={fieldClass}
                 />
               </label>
@@ -114,10 +139,8 @@ export function Preferences({ preferences, onChange }: Props) {
                   step="any"
                   inputMode="decimal"
                   value={depthStr}
-                  onChange={(e) => {
-                    setDepthStr(e.target.value)
-                    commitDesk(e.target.value, 'deskDepth')
-                  }}
+                  onChange={(e) => changeDesk(e.target.value, 'deskDepth', setDepthStr)}
+                  onBlur={(e) => blurDesk(e.target.value, 'deskDepth', deskDepth, setDepthStr)}
                   className={fieldClass}
                 />
               </label>
@@ -134,8 +157,9 @@ export function Preferences({ preferences, onChange }: Props) {
                     max={100}
                     step={1}
                     inputMode="numeric"
-                    value={deskX}
-                    onChange={(e) => commitPercent(e.target.value, 'deskX')}
+                    value={xStr}
+                    onChange={(e) => changePercent(e.target.value, 'deskX', setXStr)}
+                    onBlur={(e) => blurPercent(e.target.value, 'deskX', deskX, setXStr)}
                     className={pctFieldClass}
                   />
                   <span className="text-xs whitespace-nowrap text-[var(--text-muted)]">
@@ -152,8 +176,9 @@ export function Preferences({ preferences, onChange }: Props) {
                     max={100}
                     step={1}
                     inputMode="numeric"
-                    value={deskY}
-                    onChange={(e) => commitPercent(e.target.value, 'deskY')}
+                    value={yStr}
+                    onChange={(e) => changePercent(e.target.value, 'deskY', setYStr)}
+                    onBlur={(e) => blurPercent(e.target.value, 'deskY', deskY, setYStr)}
                     className={pctFieldClass}
                   />
                   <span className="text-xs whitespace-nowrap text-[var(--text-muted)]">
