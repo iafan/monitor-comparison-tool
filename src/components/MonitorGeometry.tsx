@@ -62,11 +62,16 @@ function GeometryCanvas() {
       ctx.fillRect(vb.pos, 0, vb.size, h)
       ctx.fillRect(0, hb.pos, w, hb.size)
 
-      // Alignment circles: aspect/roundness (outer, touches nearer edges) and centering (inner).
+      // Alignment circles: one touching the shorter-dimension sides, one touching
+      // the longer-dimension sides (clipped top/bottom or left/right), and a small
+      // central one — all should read as true circles if aspect and linearity are right.
       ctx.strokeStyle = '#fff'
       ctx.lineWidth = lw
       ctx.beginPath()
       ctx.arc(cxf, cyf, Math.min(w, h) / 2 - lw, 0, Math.PI * 2)
+      ctx.stroke()
+      ctx.beginPath()
+      ctx.arc(cxf, cyf, Math.max(w, h) / 2 - lw, 0, Math.PI * 2)
       ctx.stroke()
       ctx.beginPath()
       ctx.arc(cxf, cyf, cell * 2, 0, Math.PI * 2)
