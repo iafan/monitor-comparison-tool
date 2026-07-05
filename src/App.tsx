@@ -24,7 +24,7 @@ export function App() {
   const { preferences, update: updatePreferences } = usePreferences()
   const [modal, setModal] = useState<ModalState>(null)
 
-  const { unit, deskEnabled, deskWidth, deskDepth } = preferences
+  const { unit, deskEnabled, deskWidth, deskDepth, deskX, deskY } = preferences
   const hasCurved = monitors.some((m) => m.visible && m.curveRadius)
 
   const handleSave = (input: MonitorInput) => {
@@ -54,6 +54,8 @@ export function App() {
         deskEnabled={deskEnabled}
         deskWidth={deskWidth}
         deskDepth={deskDepth}
+        deskX={deskX}
+        deskY={deskY}
         unit={unit}
       />
       <MonitorList
@@ -70,13 +72,12 @@ export function App() {
         onChange={setAlignment}
         topViewAlign={topViewAlign}
         onTopViewAlignChange={setTopViewAlign}
-        showTopView={hasCurved && !deskEnabled}
+        showTopView={hasCurved || deskEnabled}
       />
 
       {modal && (
         <MonitorFormModal
           editing={modal.editing}
-          deskEnabled={deskEnabled}
           onSave={handleSave}
           onClose={() => setModal(null)}
         />

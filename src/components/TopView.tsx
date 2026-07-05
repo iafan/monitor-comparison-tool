@@ -11,6 +11,8 @@ interface Props {
   deskEnabled: boolean
   deskWidth: number
   deskDepth: number
+  deskX: number
+  deskY: number
   unit: Unit
 }
 
@@ -44,6 +46,8 @@ export function TopView({
   deskEnabled,
   deskWidth,
   deskDepth,
+  deskX,
+  deskY,
   unit,
 }: Props) {
   const layout = useMemo(() => {
@@ -59,71 +63,77 @@ export function TopView({
       radius: m.curveRadius,
     }))
 
-    if (deskEnabled) {
-      const W = Math.max(deskWidth, 1)
-      const D = Math.max(deskDepth, 1)
-      const padX = W * 0.04 + 0.5
-      const padY = D * 0.06 + 0.5
-      const vbW = W + padX * 2
-      const vbH = D + padY * 2
-      const desk = { x: padX, y: padY, w: W, h: D }
-
-      const polylines = visible.map((m) => {
-        const { widthIn } = physical(m)
-        const cx = padX + (m.deskX / 100) * W
-        const backY = padY + (m.deskY / 100) * D
-        const points = arcLocalPoints(widthIn, m.curveRadius)
-          .map(([x, y]) => `${(cx + x).toFixed(2)},${(backY + y).toFixed(2)}`)
-          .join(' ')
-        return { id: m.id, color: seriesColor(m.colorSlot), points }
-      })
-
-      return { mode: 'desk' as const, vbW, vbH, desk, polylines, legend }
-    }
-
-    // Curvature-only mode: apex/center/front aligned arcs, centered on box centers.
+    // Arrange the monitors as a stack: horizontal by the front-view alignment's
+    // horizontal component, depth by the top-view alignment.
     const hAlign = alignment === 'center' ? 'center' : alignment.split('-')[1]
     const items = visible.map((m) => ({ m, widthIn: physical(m).widthIn }))
     const maxW = Math.max(...items.map((i) => i.widthIn))
     const centerXof = (w: number) =>
       hAlign === 'left' ? w / 2 : hAlign === 'right' ? maxW - w / 2 : maxW / 2
+    const offsetY = (sag: number) =>
+      topViewAlign === 'back' ? 0 : topViewAlign === 'front' ? -sag : -sag / 2
 
     const arcs = items.map(({ m, widthIn }) => {
       const local = arcLocalPoints(widthIn, m.curveRadius)
       const sag = local[local.length - 1][1]
-      return { id: m.id, color: seriesColor(m.colorSlot), local, cx: centerXof(widthIn), sag, widthIn }
+      const cx = centerXof(widthIn)
+      const oy = offsetY(sag)
+      return {
+        id: m.id,
+        color: seriesColor(m.colorSlot),
+        // Absolute arrangement points (before final placement).
+        pts: local.map(([x, y]) => [cx + x, y + oy] as [number, number]),
+      }
     })
 
-    const offsetY = (sag: number) =>
-      topViewAlign === 'back' ? 0 : topViewAlign === 'front' ? -sag : -sag / 2
+    const xs = arcs.flatMap((a) => a.pts.map((p) => p[0]))
+    const ys = arcs.flatMap((a) => a.pts.map((p) => p[1]))
+    const gxmin = Math.min(...xs)
+    const gxmax = Math.max(...xs)
+    const gymin = Math.min(...ys)
+    const gymax = Math.max(...ys)
 
-    const xs = arcs.flatMap((a) => {
-      const half = a.local.reduce((mx, [x]) => Math.max(mx, Math.abs(x)), 0)
-      return [a.cx - half, a.cx + half]
-    })
-    const ys = arcs.flatMap((a) => a.local.map((p) => p[1] + offsetY(a.sag)))
-    const xmin = Math.min(...xs)
-    const xmax = Math.max(...xs)
-    const ymin = Math.min(...ys)
-    const ymax = Math.max(...ys)
+    if (deskEnabled) {
+      const W = Math.max(deskWidth, 1)
+      const D = Math.max(deskDepth, 1)
+      // Place the group: horizontal center at deskX%, back-most point at deskY% from far edge.
+      const shiftX = (deskX / 100) * W - (gxmin + gxmax) / 2
+      const shiftY = (deskY / 100) * D - gymin
 
-    const padX = (xmax - xmin) * 0.04 + 0.4
-    const vbW = xmax - xmin + padX * 2
-    const contentH = ymax - ymin
+      const polylines = arcs.map((a) => ({
+        id: a.id,
+        color: a.color,
+        points: a.pts.map(([x, y]) => `${(x + shiftX).toFixed(2)},${(y + shiftY).toFixed(2)}`).join(' '),
+      }))
+
+      // Fit the viewBox around the desk and any overhanging panels.
+      const pad = Math.max(W, D) * 0.04 + 0.5
+      const minX = Math.min(0, gxmin + shiftX) - pad
+      const maxX = Math.max(W, gxmax + shiftX) + pad
+      const minY = Math.min(0, gymin + shiftY) - pad
+      const maxY = Math.max(D, gymax + shiftY) + pad
+      const viewBox = `${minX.toFixed(2)} ${minY.toFixed(2)} ${(maxX - minX).toFixed(2)} ${(maxY - minY).toFixed(2)}`
+
+      return { mode: 'desk' as const, viewBox, desk: { w: W, h: D }, polylines, legend }
+    }
+
+    // Curvature-only mode: tight fit around the arranged stack.
+    const contentW = gxmax - gxmin
+    const contentH = gymax - gymin
+    const padX = contentW * 0.04 + 0.4
+    const vbW = contentW + padX * 2
     const vbH = Math.max(contentH + PAD_Y * 2, vbW / MAX_ASPECT)
-    const shiftX = -xmin + padX
-    const shiftY = -ymin + (vbH - contentH) / 2
+    const shiftX = -gxmin + padX
+    const shiftY = -gymin + (vbH - contentH) / 2
 
     const polylines = arcs.map((a) => ({
       id: a.id,
       color: a.color,
-      points: a.local
-        .map(([x, y]) => `${(a.cx + x + shiftX).toFixed(2)},${(y + offsetY(a.sag) + shiftY).toFixed(2)}`)
-        .join(' '),
+      points: a.pts.map(([x, y]) => `${(x + shiftX).toFixed(2)},${(y + shiftY).toFixed(2)}`).join(' '),
     }))
 
-    return { mode: 'arcs' as const, vbW, vbH, polylines, legend }
-  }, [monitors, alignment, topViewAlign, deskEnabled, deskWidth, deskDepth])
+    return { mode: 'arcs' as const, viewBox: `0 0 ${vbW.toFixed(2)} ${vbH.toFixed(2)}`, polylines, legend }
+  }, [monitors, alignment, topViewAlign, deskEnabled, deskWidth, deskDepth, deskX, deskY])
 
   if (!layout) return null
 
@@ -151,7 +161,7 @@ export function TopView({
         </div>
       </div>
       <svg
-        viewBox={`0 0 ${layout.vbW} ${layout.vbH}`}
+        viewBox={layout.viewBox}
         preserveAspectRatio="xMidYMid meet"
         className="block h-auto w-full"
         role="img"
@@ -159,8 +169,8 @@ export function TopView({
       >
         {layout.mode === 'desk' && (
           <rect
-            x={layout.desk.x}
-            y={layout.desk.y}
+            x={0}
+            y={0}
             width={layout.desk.w}
             height={layout.desk.h}
             rx={0.4}

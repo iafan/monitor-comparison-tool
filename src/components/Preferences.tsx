@@ -11,7 +11,7 @@ const fieldClass =
   'min-h-11 w-24 rounded-lg border border-[var(--border)] bg-[var(--page-plane)] px-3 py-2 text-base text-[var(--text-primary)]'
 
 export function Preferences({ preferences, onChange }: Props) {
-  const { unit, deskEnabled, deskWidth, deskDepth } = preferences
+  const { unit, deskEnabled, deskWidth, deskDepth, deskX, deskY } = preferences
 
   // Desk fields are edited in the current unit; canonical storage stays in inches.
   const [widthStr, setWidthStr] = useState(String(roundToUnit(deskWidth, unit)))
@@ -29,6 +29,12 @@ export function Preferences({ preferences, onChange }: Props) {
     if (raw !== '' && Number.isFinite(num) && num > 0) {
       onChange({ [key]: toInches(num, unit) })
     }
+  }
+
+  const commitPercent = (raw: string, key: 'deskX' | 'deskY') => {
+    if (raw === '') return
+    const num = Number(raw)
+    if (Number.isFinite(num)) onChange({ [key]: Math.min(100, Math.max(0, num)) })
   }
 
   return (
@@ -107,6 +113,32 @@ export function Preferences({ preferences, onChange }: Props) {
                   setDepthStr(e.target.value)
                   commitDesk(e.target.value, 'deskDepth')
                 }}
+                className={fieldClass}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm text-[var(--text-secondary)]">
+              <span>Monitor X (% from left)</span>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step={1}
+                inputMode="numeric"
+                value={deskX}
+                onChange={(e) => commitPercent(e.target.value, 'deskX')}
+                className={fieldClass}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm text-[var(--text-secondary)]">
+              <span>Monitor Y (% from far edge)</span>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step={1}
+                inputMode="numeric"
+                value={deskY}
+                onChange={(e) => commitPercent(e.target.value, 'deskY')}
                 className={fieldClass}
               />
             </label>

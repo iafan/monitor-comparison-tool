@@ -6,12 +6,14 @@ export const TOPVIEW_ALIGN_KEY = 'monitor-comparison:topview-align:v1'
 export const PREFS_KEY = 'monitor-comparison:preferences:v1'
 export const COLOR_SLOTS = 8
 
-/** Desk defaults ~140 × 70 cm, stored in inches. */
+/** Desk defaults ~140 × 70 cm, stored in inches; monitors centered near the back. */
 export const DEFAULT_PREFERENCES: Preferences = {
   unit: 'in',
   deskEnabled: false,
   deskWidth: 55,
   deskDepth: 28,
+  deskX: 50,
+  deskY: 10,
 }
 
 export const ALIGNMENTS: Alignment[] = [
@@ -72,8 +74,6 @@ export const DEFAULT_MONITORS: Omit<Monitor, 'id'>[] = [
     resHeight: 1440,
     diagonal: 31.5,
     curveRadius: null,
-    deskX: 30,
-    deskY: 12,
     visible: true,
     colorSlot: 0,
   },
@@ -83,8 +83,6 @@ export const DEFAULT_MONITORS: Omit<Monitor, 'id'>[] = [
     resHeight: 1440,
     diagonal: 34,
     curveRadius: 1800,
-    deskX: 68,
-    deskY: 12,
     visible: true,
     colorSlot: 1,
   },

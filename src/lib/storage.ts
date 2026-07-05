@@ -26,13 +26,8 @@ export function loadMonitors(): Monitor[] {
     if (!raw) return seedDefaults()
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed) || parsed.length === 0) return seedDefaults()
-    // Normalize entries saved before curveRadius / desk placement existed.
-    return (parsed as Monitor[]).map((m) => ({
-      ...m,
-      curveRadius: m.curveRadius ?? null,
-      deskX: m.deskX ?? 50,
-      deskY: m.deskY ?? 10,
-    }))
+    // Normalize entries saved before curveRadius existed.
+    return (parsed as Monitor[]).map((m) => ({ ...m, curveRadius: m.curveRadius ?? null }))
   } catch {
     return seedDefaults()
   }
