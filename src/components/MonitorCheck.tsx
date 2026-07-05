@@ -40,6 +40,9 @@ function cssStripes(orientation: Orientation): string {
   return `repeating-linear-gradient(${dir}, #000, #000 1px, #fff 1px, #fff 2px)`
 }
 
+/** Stepped grayscale bands, 0–100% in 5% steps (21 values), shared by the tile and the screen. */
+const GRAD_BANDS = Array.from({ length: 21 }, (_, i) => Math.round((i / 20) * 255))
+
 function swatchStyle(p: Pattern): React.CSSProperties {
   if (p.fill) return { background: p.fill }
   if (p.render === 'gradient') return { background: 'linear-gradient(to right, #000, #fff)' }
@@ -125,11 +128,10 @@ function SplitStripes({ orientation, showLabels }: { orientation: Orientation; s
 
 /** Top: 21 stepped grayscale bands (0–100% in 5% steps). Bottom: smooth ramp. */
 function GradientScreen() {
-  const bands = Array.from({ length: 21 }, (_, i) => Math.round((i / 20) * 255))
   return (
     <div className="flex h-full w-full flex-col">
       <div className="flex flex-1">
-        {bands.map((v, i) => (
+        {GRAD_BANDS.map((v, i) => (
           <div key={i} className="flex-1" style={{ background: `rgb(${v}, ${v}, ${v})` }} />
         ))}
       </div>
@@ -234,6 +236,19 @@ export function MonitorCheck() {
                     className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
                     style={{ width: '38%', height: '38%', background: GAMMA_PATCH }}
                   />
+                )}
+                {p.render === 'gradient' && (
+                  <>
+                    <span className="absolute inset-x-0 top-0 flex h-1/2">
+                      {GRAD_BANDS.map((v, i) => (
+                        <span key={i} className="h-full flex-1" style={{ background: `rgb(${v},${v},${v})` }} />
+                      ))}
+                    </span>
+                    <span
+                      className="absolute inset-x-0 bottom-0 h-1/2"
+                      style={{ background: 'linear-gradient(to right, #000, #fff)' }}
+                    />
+                  </>
                 )}
               </span>
               <span className="px-1 text-sm font-semibold text-[var(--text-primary)]">{p.label}</span>
