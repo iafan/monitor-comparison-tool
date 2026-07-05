@@ -8,7 +8,7 @@ interface Props {
   alignment: Alignment
 }
 
-const PAD = { left: 1, right: 1, top: 1.2, bottom: 1 }
+const PAD = { left: 1, right: 1, top: 1, bottom: 1 }
 
 export function ComparisonStage({ monitors, alignment }: Props) {
   const layout = useMemo(() => {
@@ -60,47 +60,46 @@ export function ComparisonStage({ monitors, alignment }: Props) {
   return (
     <section className="mb-6 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] p-3">
       <h2 className="mb-2 text-sm font-semibold text-[var(--text-secondary)]">Front view</h2>
-      <div className="aspect-[16/11] w-full">
-        {layout && (
-          <svg
-            viewBox={`0 0 ${layout.vbW} ${layout.vbH}`}
-            preserveAspectRatio="xMinYMax meet"
-            className="block size-full"
-            role="img"
-            aria-label="Monitor size comparison diagram"
-          >
-            {layout.boxes.map((b) => (
-              <g key={b.id}>
-                {/* Surface-colored halo separates overlapping panel outlines. */}
-                <rect
-                  x={b.x}
-                  y={b.yTop}
-                  width={b.widthIn}
-                  height={b.heightIn}
-                  rx={0.12}
-                  fill="none"
-                  stroke="var(--surface-1)"
-                  strokeWidth={6}
-                  vectorEffect="non-scaling-stroke"
-                />
-                <rect
-                  x={b.x}
-                  y={b.yTop}
-                  width={b.widthIn}
-                  height={b.heightIn}
-                  rx={0.12}
-                  fill={b.color}
-                  fillOpacity={0.16}
-                  stroke={b.color}
-                  strokeWidth={2}
-                  vectorEffect="non-scaling-stroke"
-                />
-              </g>
-            ))}
-          </svg>
-        )}
-      </div>
-      {!layout && <p className="mt-2 text-center text-sm text-[var(--text-muted)]">{hint}</p>}
+      {layout ? (
+        <svg
+          viewBox={`0 0 ${layout.vbW} ${layout.vbH}`}
+          preserveAspectRatio="xMidYMid meet"
+          className="block h-auto w-full"
+          role="img"
+          aria-label="Monitor size comparison diagram"
+        >
+          {layout.boxes.map((b) => (
+            <g key={b.id}>
+              {/* Surface-colored halo separates overlapping panel outlines. */}
+              <rect
+                x={b.x}
+                y={b.yTop}
+                width={b.widthIn}
+                height={b.heightIn}
+                rx={0.12}
+                fill="none"
+                stroke="var(--surface-1)"
+                strokeWidth={6}
+                vectorEffect="non-scaling-stroke"
+              />
+              <rect
+                x={b.x}
+                y={b.yTop}
+                width={b.widthIn}
+                height={b.heightIn}
+                rx={0.12}
+                fill={b.color}
+                fillOpacity={0.16}
+                stroke={b.color}
+                strokeWidth={2}
+                vectorEffect="non-scaling-stroke"
+              />
+            </g>
+          ))}
+        </svg>
+      ) : (
+        <p className="py-8 text-center text-sm text-[var(--text-muted)]">{hint}</p>
+      )}
     </section>
   )
 }
