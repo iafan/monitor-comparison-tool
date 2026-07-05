@@ -5,10 +5,12 @@ import {
   DEFAULT_PREFERENCES,
   PREFS_KEY,
   STORAGE_KEY,
+  THEME_KEY,
+  TOOL_KEY,
   TOPVIEW_ALIGN_KEY,
   TOPVIEW_ALIGNS,
 } from '../constants'
-import type { Alignment, Monitor, Preferences, TopViewAlign } from '../types'
+import type { Alignment, Monitor, Preferences, Theme, Tool, TopViewAlign } from '../types'
 
 export function uid(): string {
   return crypto.randomUUID
@@ -67,4 +69,23 @@ export function loadPreferences(): Preferences {
 
 export function savePreferences(prefs: Preferences): void {
   localStorage.setItem(PREFS_KEY, JSON.stringify(prefs))
+}
+
+export function loadTool(): Tool {
+  const raw = localStorage.getItem(TOOL_KEY)
+  return raw === 'comparison' || raw === 'check' ? raw : 'comparison'
+}
+
+export function saveTool(tool: Tool): void {
+  localStorage.setItem(TOOL_KEY, tool)
+}
+
+/** Returns the stored theme, or null to mean "no explicit choice — follow the system". */
+export function loadTheme(): Theme | null {
+  const raw = localStorage.getItem(THEME_KEY)
+  return raw === 'light' || raw === 'dark' ? raw : null
+}
+
+export function saveTheme(theme: Theme): void {
+  localStorage.setItem(THEME_KEY, theme)
 }

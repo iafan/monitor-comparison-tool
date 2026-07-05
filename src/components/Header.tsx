@@ -4,8 +4,7 @@ interface Props {
 
 export function Header({ onAdd }: Props) {
   return (
-    <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
-      <h1 className="text-xl font-bold">Monitor Size Comparison</h1>
+    <header className="mb-4 flex flex-wrap items-center justify-end gap-3">
       <button
         type="button"
         onClick={onAdd}

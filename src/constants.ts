@@ -4,6 +4,8 @@ export const STORAGE_KEY = 'monitor-comparison:monitors:v1'
 export const ALIGN_KEY = 'monitor-comparison:alignment:v1'
 export const TOPVIEW_ALIGN_KEY = 'monitor-comparison:topview-align:v1'
 export const PREFS_KEY = 'monitor-comparison:preferences:v1'
+export const TOOL_KEY = 'monitor-comparison:tool:v1'
+export const THEME_KEY = 'monitor-comparison:theme:v1'
 export const COLOR_SLOTS = 8
 
 /** Desk defaults ~140 × 70 cm, stored in inches; monitors centered near the back. */

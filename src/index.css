@@ -1,9 +1,11 @@
 @import "tailwindcss";
 
 /*
- * Palette tokens. These flip automatically under prefers-color-scheme, so every
- * component that references them via bg-[var(--token)] / text-[var(--token)]
- * adapts to dark mode without any dark: variants.
+ * Palette tokens. Light is the default; dark applies either from the system
+ * preference (until the user makes an explicit choice) or from the top-menu
+ * toggle, which stamps data-theme on the root element to override the media
+ * query. Every component references these via bg-[var(--token)] /
+ * text-[var(--token)], so both paths adapt without any dark: variants.
  */
 :root {
   --surface-1:      #fcfcfb;
@@ -27,8 +29,9 @@
   --danger: #d03b3b;
 }
 
+/* Dark palette, shared by the system default (pre-choice) and the explicit toggle. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --surface-1:      #1a1a19;
     --page-plane:     #0d0d0d;
     --text-primary:   #ffffff;
@@ -49,6 +52,28 @@
 
     --danger: #e66767;
   }
+}
+
+:root[data-theme='dark'] {
+  --surface-1:      #1a1a19;
+  --page-plane:     #0d0d0d;
+  --text-primary:   #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted:     #898781;
+  --gridline:       #2c2c2a;
+  --baseline:       #383835;
+  --border:         rgba(255, 255, 255, 0.10);
+
+  --series-1: #3987e5;
+  --series-2: #199e70;
+  --series-3: #c98500;
+  --series-4: #008300;
+  --series-5: #9085e9;
+  --series-6: #e66767;
+  --series-7: #d55181;
+  --series-8: #d95926;
+
+  --danger: #e66767;
 }
 
 html,
