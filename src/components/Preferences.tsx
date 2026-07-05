@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { UNIT_LABELS, UNITS, roundToUnit, toInches } from '../lib/units'
+import { UNIT_LABELS, UNITS, formatLength, roundToUnit, toInches } from '../lib/units'
 import type { Preferences as Prefs, Unit } from '../types'
 
 interface Props {
@@ -9,6 +9,9 @@ interface Props {
 
 const fieldClass =
   'min-h-11 w-24 rounded-lg border border-[var(--border)] bg-[var(--page-plane)] px-3 py-2 text-base text-[var(--text-primary)]'
+const pctFieldClass =
+  'min-h-11 w-16 rounded-lg border border-[var(--border)] bg-[var(--page-plane)] px-3 py-2 text-base text-[var(--text-primary)]'
+const labelClass = 'flex flex-col gap-1 text-sm text-[var(--text-secondary)]'
 
 export function Preferences({ preferences, onChange }: Props) {
   const { unit, deskEnabled, deskWidth, deskDepth, deskX, deskY } = preferences
@@ -85,63 +88,80 @@ export function Preferences({ preferences, onChange }: Props) {
         </label>
 
         {deskEnabled && (
-          <div className="flex flex-wrap gap-4">
-            <label className="flex flex-col gap-1 text-sm text-[var(--text-secondary)]">
-              <span>Desk width ({UNIT_LABELS[unit]})</span>
-              <input
-                type="number"
-                min={1}
-                step="any"
-                inputMode="decimal"
-                value={widthStr}
-                onChange={(e) => {
-                  setWidthStr(e.target.value)
-                  commitDesk(e.target.value, 'deskWidth')
-                }}
-                className={fieldClass}
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm text-[var(--text-secondary)]">
-              <span>Desk depth ({UNIT_LABELS[unit]})</span>
-              <input
-                type="number"
-                min={1}
-                step="any"
-                inputMode="decimal"
-                value={depthStr}
-                onChange={(e) => {
-                  setDepthStr(e.target.value)
-                  commitDesk(e.target.value, 'deskDepth')
-                }}
-                className={fieldClass}
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm text-[var(--text-secondary)]">
-              <span>Monitor X (% from left)</span>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                step={1}
-                inputMode="numeric"
-                value={deskX}
-                onChange={(e) => commitPercent(e.target.value, 'deskX')}
-                className={fieldClass}
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm text-[var(--text-secondary)]">
-              <span>Monitor Y (% from far edge)</span>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                step={1}
-                inputMode="numeric"
-                value={deskY}
-                onChange={(e) => commitPercent(e.target.value, 'deskY')}
-                className={fieldClass}
-              />
-            </label>
+          <div className="flex flex-wrap gap-x-6 gap-y-4">
+            {/* Desk dimensions — wrap together */}
+            <div className="flex gap-4">
+              <label className={labelClass}>
+                <span>Desk width ({UNIT_LABELS[unit]})</span>
+                <input
+                  type="number"
+                  min={1}
+                  step="any"
+                  inputMode="decimal"
+                  value={widthStr}
+                  onChange={(e) => {
+                    setWidthStr(e.target.value)
+                    commitDesk(e.target.value, 'deskWidth')
+                  }}
+                  className={fieldClass}
+                />
+              </label>
+              <label className={labelClass}>
+                <span>Desk depth ({UNIT_LABELS[unit]})</span>
+                <input
+                  type="number"
+                  min={1}
+                  step="any"
+                  inputMode="decimal"
+                  value={depthStr}
+                  onChange={(e) => {
+                    setDepthStr(e.target.value)
+                    commitDesk(e.target.value, 'deskDepth')
+                  }}
+                  className={fieldClass}
+                />
+              </label>
+            </div>
+
+            {/* Monitor placement — X and Y stay on one row */}
+            <div className="flex gap-4">
+              <label className={labelClass}>
+                <span>Monitor X (% from left)</span>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={1}
+                    inputMode="numeric"
+                    value={deskX}
+                    onChange={(e) => commitPercent(e.target.value, 'deskX')}
+                    className={pctFieldClass}
+                  />
+                  <span className="text-xs whitespace-nowrap text-[var(--text-muted)]">
+                    = {formatLength((deskX / 100) * deskWidth, unit)}
+                  </span>
+                </div>
+              </label>
+              <label className={labelClass}>
+                <span>Monitor Y (% from far edge)</span>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={1}
+                    inputMode="numeric"
+                    value={deskY}
+                    onChange={(e) => commitPercent(e.target.value, 'deskY')}
+                    className={pctFieldClass}
+                  />
+                  <span className="text-xs whitespace-nowrap text-[var(--text-muted)]">
+                    = {formatLength((deskY / 100) * deskDepth, unit)}
+                  </span>
+                </div>
+              </label>
+            </div>
           </div>
         )}
       </div>
