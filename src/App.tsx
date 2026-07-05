@@ -7,6 +7,7 @@ import { MonitorList } from './components/MonitorList'
 import { DetailsTable } from './components/DetailsTable'
 import { Preferences } from './components/Preferences'
 import { AlignmentPicker } from './components/AlignmentPicker'
+import { DeskSettings } from './components/DeskSettings'
 import { MonitorFormModal } from './components/MonitorFormModal'
 import { useMonitors } from './hooks/useMonitors'
 import { useAlignment } from './hooks/useAlignment'
@@ -74,6 +75,7 @@ export function App() {
         onTopViewAlignChange={setTopViewAlign}
         showTopView={hasCurved || deskEnabled}
       />
+      <DeskSettings preferences={preferences} onChange={updatePreferences} />
 
       {modal && (
         <MonitorFormModal
