@@ -114,8 +114,8 @@ export function MonitorFormModal({ editing, onSave, onClose }: Props) {
           </label>
 
           <div className="flex gap-3">
-            <label className={`${labelClass} flex-1`}>
-              <span>Res. width (px)</span>
+            <label className={`${labelClass} min-w-0 flex-1`}>
+              <span>Resolution width (px)</span>
               <NumberField
                 value={resWidth}
                 onCommit={(n) => setResWidth(n)}
@@ -127,8 +127,8 @@ export function MonitorFormModal({ editing, onSave, onClose }: Props) {
                 className={fieldClass}
               />
             </label>
-            <label className={`${labelClass} flex-1`}>
-              <span>Res. height (px)</span>
+            <label className={`${labelClass} min-w-0 flex-1`}>
+              <span>Resolution height (px)</span>
               <NumberField
                 value={resHeight}
                 onCommit={(n) => setResHeight(n)}
@@ -171,7 +171,7 @@ export function MonitorFormModal({ editing, onSave, onClose }: Props) {
 
           {curved && (
             <div className="flex gap-3">
-              <label className={`${labelClass} flex-1`}>
+              <label className={`${labelClass} min-w-0 flex-1`}>
                 <span>Typical radius</span>
                 <select
                   value={radiusPreset}
@@ -186,7 +186,7 @@ export function MonitorFormModal({ editing, onSave, onClose }: Props) {
                   ))}
                 </select>
               </label>
-              <label className={`${labelClass} flex-1`}>
+              <label className={`${labelClass} min-w-0 flex-1`}>
                 <span>Radius (mm)</span>
                 <NumberField
                   value={curveRadius}
