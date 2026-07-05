@@ -6,7 +6,18 @@ interface Props {
   monitors: Monitor[]
 }
 
-const HEADERS = ['', 'Name', 'Resolution', 'Ratio', 'Diagonal', 'Width', 'Height', 'PPI', 'Pixel pitch']
+const HEADERS = [
+  '',
+  'Name',
+  'Resolution',
+  'Ratio',
+  'Diagonal',
+  'Width',
+  'Height',
+  'PPI',
+  'Pixel pitch',
+  'Curvature',
+]
 
 export function DetailsTable({ monitors }: Props) {
   return (
@@ -54,6 +65,9 @@ export function DetailsTable({ monitors }: Props) {
                     <td className="px-2.5 py-2 tabular-nums">{formatNumber(p.heightIn)} in</td>
                     <td className="px-2.5 py-2 tabular-nums">{Math.round(p.ppi)}</td>
                     <td className="px-2.5 py-2 tabular-nums">{formatNumber(p.pitchMm, 3)} mm</td>
+                    <td className="px-2.5 py-2 tabular-nums">
+                      {m.curveRadius ? `${m.curveRadius}R` : 'Flat'}
+                    </td>
                   </tr>
                 )
               })

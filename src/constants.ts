@@ -43,10 +43,29 @@ export const PRESETS: Preset[] = [
   { label: '5K — 5120 × 2880', resWidth: 5120, resHeight: 2880 },
 ]
 
+/** Typical curved-monitor radii in mm; smaller = more aggressively curved. */
+export const CURVATURE_PRESETS = [1000, 1500, 1800, 2300, 3000, 4000]
+
 /** Seeded on first load; QHD 31.5" and WQHD 34" as requested. */
 export const DEFAULT_MONITORS: Omit<Monitor, 'id'>[] = [
-  { name: 'QHD 31.5"', resWidth: 2560, resHeight: 1440, diagonal: 31.5, visible: true, colorSlot: 0 },
-  { name: 'WQHD 34"', resWidth: 3440, resHeight: 1440, diagonal: 34, visible: true, colorSlot: 1 },
+  {
+    name: 'QHD 31.5"',
+    resWidth: 2560,
+    resHeight: 1440,
+    diagonal: 31.5,
+    curveRadius: null,
+    visible: true,
+    colorSlot: 0,
+  },
+  {
+    name: 'WQHD 34"',
+    resWidth: 3440,
+    resHeight: 1440,
+    diagonal: 34,
+    curveRadius: 1800,
+    visible: true,
+    colorSlot: 1,
+  },
 ]
 
 /** Maps a monitor's color slot to one of the eight categorical palette tokens. */

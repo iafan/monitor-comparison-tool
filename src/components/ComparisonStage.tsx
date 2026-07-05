@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { seriesColor } from '../constants'
 import { physical } from '../lib/geometry'
+import { deoverlap } from '../lib/labels'
 import { useElementSize } from '../hooks/useElementSize'
 import type { Alignment, Monitor } from '../types'
 
@@ -55,20 +56,16 @@ export function ComparisonStage({ monitors, alignment }: Props) {
       }))
 
     // Position labels in pixel space and nudge them apart so they don't overlap.
-    const labels = boxes
-      .map((b) => ({
+    const labels = deoverlap(
+      boxes.map((b) => ({
         id: b.id,
         name: b.name,
         color: b.color,
         left: (b.x / vbW) * size.width,
         top: (b.yTop / vbH) * size.height,
-      }))
-      .sort((a, b) => a.top - b.top)
-    labels.forEach((label, i) => {
-      if (i === 0) return
-      const prev = labels[i - 1]
-      if (label.top < prev.top + LABEL_MIN_GAP) label.top = prev.top + LABEL_MIN_GAP
-    })
+      })),
+      LABEL_MIN_GAP,
+    )
 
     return { vbW, vbH, boxes, labels }
   }, [monitors, alignment, size.width, size.height])

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { PRESETS } from '../constants'
+import { CURVATURE_PRESETS, PRESETS } from '../constants'
 import type { Monitor, MonitorInput } from '../types'
 
 interface Props {
@@ -24,7 +24,10 @@ export function MonitorFormModal({ editing, onSave, onClose }: Props) {
   const [resWidth, setResWidth] = useState<number | ''>(editing?.resWidth ?? '')
   const [resHeight, setResHeight] = useState<number | ''>(editing?.resHeight ?? '')
   const [diagonal, setDiagonal] = useState<number | ''>(editing?.diagonal ?? '')
+  const [curved, setCurved] = useState(Boolean(editing?.curveRadius))
+  const [curveRadius, setCurveRadius] = useState<number | ''>(editing?.curveRadius ?? '')
   const preset = presetKey(resWidth, resHeight)
+  const radiusPreset = CURVATURE_PRESETS.includes(Number(curveRadius)) ? String(curveRadius) : ''
 
   // Close on Escape.
   useEffect(() => {
@@ -42,11 +45,23 @@ export function MonitorFormModal({ editing, onSave, onClose }: Props) {
     setResHeight(h)
   }
 
+  const setCurvature = (isCurved: boolean) => {
+    setCurved(isCurved)
+    // Offer a sensible default radius the moment "Curved" is chosen.
+    if (isCurved && curveRadius === '') setCurveRadius(1800)
+  }
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     const trimmed = name.trim()
     if (!trimmed || !resWidth || !resHeight || !diagonal) return
-    onSave({ name: trimmed, resWidth, resHeight, diagonal })
+    onSave({
+      name: trimmed,
+      resWidth,
+      resHeight,
+      diagonal,
+      curveRadius: curved && curveRadius ? curveRadius : null,
+    })
   }
 
   return (
@@ -139,6 +154,53 @@ export function MonitorFormModal({ editing, onSave, onClose }: Props) {
               className={fieldClass}
             />
           </label>
+
+          <label className={labelClass}>
+            <span>Screen curvature</span>
+            <select
+              value={curved ? 'curved' : 'flat'}
+              onChange={(e) => setCurvature(e.target.value === 'curved')}
+              className={fieldClass}
+            >
+              <option value="flat">Flat</option>
+              <option value="curved">Curved</option>
+            </select>
+          </label>
+
+          {curved && (
+            <div className="flex gap-3">
+              <label className={`${labelClass} flex-1`}>
+                <span>Typical radius</span>
+                <select
+                  value={radiusPreset}
+                  onChange={(e) => e.target.value && setCurveRadius(Number(e.target.value))}
+                  className={fieldClass}
+                >
+                  <option value="">Custom…</option>
+                  {CURVATURE_PRESETS.map((r) => (
+                    <option key={r} value={r}>
+                      {r}R
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className={`${labelClass} flex-1`}>
+                <span>Radius (mm)</span>
+                <input
+                  type="number"
+                  value={curveRadius}
+                  onChange={(e) =>
+                    setCurveRadius(e.target.value === '' ? '' : Number(e.target.value))
+                  }
+                  min={100}
+                  step={50}
+                  inputMode="numeric"
+                  placeholder="e.g. 1800"
+                  className={fieldClass}
+                />
+              </label>
+            </div>
+          )}
 
           <div className="mt-2 flex justify-end gap-2.5">
             <button

@@ -33,7 +33,8 @@ export function MonitorCard({ monitor, onToggle, onEdit, onDelete }: Props) {
         <div className="truncate font-semibold">{monitor.name}</div>
         <div className="text-xs text-[var(--text-muted)]">
           {monitor.resWidth}×{monitor.resHeight} · {monitor.diagonal}" ·{' '}
-          {formatNumber(p.widthIn)}×{formatNumber(p.heightIn)} in · {Math.round(p.ppi)} PPI
+          {formatNumber(p.widthIn)}×{formatNumber(p.heightIn)} in · {Math.round(p.ppi)} PPI ·{' '}
+          {monitor.curveRadius ? `${monitor.curveRadius}R` : 'Flat'}
         </div>
       </div>
       <div className="flex flex-none gap-1.5">

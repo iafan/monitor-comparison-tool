@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Header } from './components/Header'
 import { Legend } from './components/Legend'
 import { ComparisonStage } from './components/ComparisonStage'
+import { TopView } from './components/TopView'
 import { MonitorList } from './components/MonitorList'
 import { DetailsTable } from './components/DetailsTable'
 import { AlignmentPicker } from './components/AlignmentPicker'
@@ -38,6 +39,7 @@ export function App() {
       <Header onAdd={() => setModal({ editing: null })} />
       <Legend monitors={monitors} />
       <ComparisonStage monitors={monitors} alignment={alignment} />
+      <TopView monitors={monitors} />
       <MonitorList
         monitors={monitors}
         onToggle={toggleVisibility}
