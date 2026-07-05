@@ -2,18 +2,18 @@
   <!-- White background, matching the app's front-view stage. -->
   <rect width="512" height="512" fill="#ffffff"/>
 
-  <!-- Overlapping panels, bottom-center aligned and layered largest-first,
-       styled like the app: 16% color fill plus a solid colored outline. -->
+  <!-- Overlapping panels, centered and layered largest-first, styled like
+       the app: 16% color fill plus a solid colored outline. -->
 
   <!-- Largest: ultrawide (blue, series 1) -->
-  <rect x="64" y="253" width="384" height="165" rx="12"
+  <rect x="64" y="180" width="384" height="165" rx="12"
         fill="#2a78d6" fill-opacity="0.16" stroke="#2a78d6" stroke-width="5"/>
 
   <!-- Medium: 16:9 (orange, series 8) -->
-  <rect x="98" y="240" width="316" height="178" rx="12"
+  <rect x="98" y="167" width="316" height="178" rx="12"
         fill="#eb6834" fill-opacity="0.16" stroke="#eb6834" stroke-width="5"/>
 
   <!-- Smallest (green, series 4) -->
-  <rect x="151" y="287" width="210" height="131" rx="12"
+  <rect x="151" y="214" width="210" height="131" rx="12"
         fill="#008300" fill-opacity="0.16" stroke="#008300" stroke-width="5"/>
 </svg>
