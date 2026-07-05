@@ -5,11 +5,13 @@ import { ComparisonStage } from './components/ComparisonStage'
 import { TopView } from './components/TopView'
 import { MonitorList } from './components/MonitorList'
 import { DetailsTable } from './components/DetailsTable'
+import { Preferences } from './components/Preferences'
 import { AlignmentPicker } from './components/AlignmentPicker'
 import { MonitorFormModal } from './components/MonitorFormModal'
 import { useMonitors } from './hooks/useMonitors'
 import { useAlignment } from './hooks/useAlignment'
 import { useTopViewAlign } from './hooks/useTopViewAlign'
+import { usePreferences } from './hooks/usePreferences'
 import type { Monitor, MonitorInput } from './types'
 
 /** null = modal closed; { editing } = open (editing null means "add new"). */
@@ -19,8 +21,10 @@ export function App() {
   const { monitors, addMonitor, updateMonitor, deleteMonitor, toggleVisibility } = useMonitors()
   const { alignment, setAlignment } = useAlignment()
   const { topViewAlign, setTopViewAlign } = useTopViewAlign()
+  const { preferences, update: updatePreferences } = usePreferences()
   const [modal, setModal] = useState<ModalState>(null)
 
+  const { unit, deskEnabled, deskWidth, deskDepth } = preferences
   const hasCurved = monitors.some((m) => m.visible && m.curveRadius)
 
   const handleSave = (input: MonitorInput) => {
@@ -43,25 +47,36 @@ export function App() {
       <Header onAdd={() => setModal({ editing: null })} />
       <Legend monitors={monitors} />
       <ComparisonStage monitors={monitors} alignment={alignment} />
-      <TopView monitors={monitors} alignment={alignment} topViewAlign={topViewAlign} />
+      <TopView
+        monitors={monitors}
+        alignment={alignment}
+        topViewAlign={topViewAlign}
+        deskEnabled={deskEnabled}
+        deskWidth={deskWidth}
+        deskDepth={deskDepth}
+        unit={unit}
+      />
       <MonitorList
         monitors={monitors}
+        unit={unit}
         onToggle={toggleVisibility}
         onEdit={(monitor) => setModal({ editing: monitor })}
         onDelete={handleDelete}
       />
-      <DetailsTable monitors={monitors} />
+      <DetailsTable monitors={monitors} unit={unit} />
+      <Preferences preferences={preferences} onChange={updatePreferences} />
       <AlignmentPicker
         value={alignment}
         onChange={setAlignment}
         topViewAlign={topViewAlign}
         onTopViewAlignChange={setTopViewAlign}
-        showTopView={hasCurved}
+        showTopView={hasCurved && !deskEnabled}
       />
 
       {modal && (
         <MonitorFormModal
           editing={modal.editing}
+          deskEnabled={deskEnabled}
           onSave={handleSave}
           onClose={() => setModal(null)}
         />

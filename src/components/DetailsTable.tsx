@@ -1,9 +1,11 @@
 import { seriesColor } from '../constants'
 import { formatNumber, physical } from '../lib/geometry'
-import type { Monitor } from '../types'
+import { formatLength } from '../lib/units'
+import type { Monitor, Unit } from '../types'
 
 interface Props {
   monitors: Monitor[]
+  unit: Unit
 }
 
 const HEADERS = [
@@ -19,7 +21,7 @@ const HEADERS = [
   'Curvature',
 ]
 
-export function DetailsTable({ monitors }: Props) {
+export function DetailsTable({ monitors, unit }: Props) {
   return (
     <section className="mb-6">
       <h2 className="mb-2.5 text-base font-semibold text-[var(--text-secondary)]">Details</h2>
@@ -61,8 +63,8 @@ export function DetailsTable({ monitors }: Props) {
                     </td>
                     <td className="px-2.5 py-2 tabular-nums">{p.ratio}</td>
                     <td className="px-2.5 py-2 tabular-nums">{m.diagonal}"</td>
-                    <td className="px-2.5 py-2 tabular-nums">{formatNumber(p.widthIn)} in</td>
-                    <td className="px-2.5 py-2 tabular-nums">{formatNumber(p.heightIn)} in</td>
+                    <td className="px-2.5 py-2 tabular-nums">{formatLength(p.widthIn, unit)}</td>
+                    <td className="px-2.5 py-2 tabular-nums">{formatLength(p.heightIn, unit)}</td>
                     <td className="px-2.5 py-2 tabular-nums">{Math.round(p.ppi)}</td>
                     <td className="px-2.5 py-2 tabular-nums">{formatNumber(p.pitchMm, 3)} mm</td>
                     <td className="px-2.5 py-2 tabular-nums">

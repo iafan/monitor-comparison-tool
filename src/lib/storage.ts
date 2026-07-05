@@ -2,11 +2,13 @@ import {
   ALIGN_KEY,
   ALIGNMENTS,
   DEFAULT_MONITORS,
+  DEFAULT_PREFERENCES,
+  PREFS_KEY,
   STORAGE_KEY,
   TOPVIEW_ALIGN_KEY,
   TOPVIEW_ALIGNS,
 } from '../constants'
-import type { Alignment, Monitor, TopViewAlign } from '../types'
+import type { Alignment, Monitor, Preferences, TopViewAlign } from '../types'
 
 export function uid(): string {
   return crypto.randomUUID
@@ -24,8 +26,13 @@ export function loadMonitors(): Monitor[] {
     if (!raw) return seedDefaults()
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed) || parsed.length === 0) return seedDefaults()
-    // Normalize entries saved before curveRadius existed.
-    return (parsed as Monitor[]).map((m) => ({ ...m, curveRadius: m.curveRadius ?? null }))
+    // Normalize entries saved before curveRadius / desk placement existed.
+    return (parsed as Monitor[]).map((m) => ({
+      ...m,
+      curveRadius: m.curveRadius ?? null,
+      deskX: m.deskX ?? 50,
+      deskY: m.deskY ?? 10,
+    }))
   } catch {
     return seedDefaults()
   }
@@ -51,4 +58,18 @@ export function loadTopViewAlign(): TopViewAlign {
 
 export function saveTopViewAlign(align: TopViewAlign): void {
   localStorage.setItem(TOPVIEW_ALIGN_KEY, align)
+}
+
+export function loadPreferences(): Preferences {
+  try {
+    const raw = localStorage.getItem(PREFS_KEY)
+    if (!raw) return DEFAULT_PREFERENCES
+    return { ...DEFAULT_PREFERENCES, ...(JSON.parse(raw) as Partial<Preferences>) }
+  } catch {
+    return DEFAULT_PREFERENCES
+  }
+}
+
+export function savePreferences(prefs: Preferences): void {
+  localStorage.setItem(PREFS_KEY, JSON.stringify(prefs))
 }

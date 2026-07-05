@@ -5,6 +5,8 @@ import type { Monitor, MonitorInput } from '../types'
 interface Props {
   /** The monitor being edited, or null when adding a new one. */
   editing: Monitor | null
+  /** Whether desk placement fields are available. */
+  deskEnabled: boolean
   onSave: (input: MonitorInput) => void
   onClose: () => void
 }
@@ -19,13 +21,15 @@ const fieldClass =
   'min-h-11 rounded-lg border border-[var(--border)] bg-[var(--page-plane)] px-3 py-2.5 text-base text-[var(--text-primary)]'
 const labelClass = 'flex flex-col gap-1 text-sm text-[var(--text-secondary)]'
 
-export function MonitorFormModal({ editing, onSave, onClose }: Props) {
+export function MonitorFormModal({ editing, deskEnabled, onSave, onClose }: Props) {
   const [name, setName] = useState(editing?.name ?? '')
   const [resWidth, setResWidth] = useState<number | ''>(editing?.resWidth ?? '')
   const [resHeight, setResHeight] = useState<number | ''>(editing?.resHeight ?? '')
   const [diagonal, setDiagonal] = useState<number | ''>(editing?.diagonal ?? '')
   const [curved, setCurved] = useState(Boolean(editing?.curveRadius))
   const [curveRadius, setCurveRadius] = useState<number | ''>(editing?.curveRadius ?? '')
+  const [deskX, setDeskX] = useState<number | ''>(editing?.deskX ?? 50)
+  const [deskY, setDeskY] = useState<number | ''>(editing?.deskY ?? 10)
   const preset = presetKey(resWidth, resHeight)
   const radiusPreset = CURVATURE_PRESETS.includes(Number(curveRadius)) ? String(curveRadius) : ''
 
@@ -61,6 +65,8 @@ export function MonitorFormModal({ editing, onSave, onClose }: Props) {
       resHeight,
       diagonal,
       curveRadius: curved && curveRadius ? curveRadius : null,
+      deskX: deskX === '' ? 50 : deskX,
+      deskY: deskY === '' ? 10 : deskY,
     })
   }
 
@@ -196,6 +202,37 @@ export function MonitorFormModal({ editing, onSave, onClose }: Props) {
                   step={50}
                   inputMode="numeric"
                   placeholder="e.g. 1800"
+                  className={fieldClass}
+                />
+              </label>
+            </div>
+          )}
+
+          {deskEnabled && (
+            <div className="flex gap-3">
+              <label className={`${labelClass} flex-1`}>
+                <span>Desk position X (% from left)</span>
+                <input
+                  type="number"
+                  value={deskX}
+                  onChange={(e) => setDeskX(e.target.value === '' ? '' : Number(e.target.value))}
+                  min={0}
+                  max={100}
+                  step={1}
+                  inputMode="numeric"
+                  className={fieldClass}
+                />
+              </label>
+              <label className={`${labelClass} flex-1`}>
+                <span>Y (% from far edge)</span>
+                <input
+                  type="number"
+                  value={deskY}
+                  onChange={(e) => setDeskY(e.target.value === '' ? '' : Number(e.target.value))}
+                  min={0}
+                  max={100}
+                  step={1}
+                  inputMode="numeric"
                   className={fieldClass}
                 />
               </label>

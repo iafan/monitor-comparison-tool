@@ -1,15 +1,17 @@
 import { seriesColor } from '../constants'
-import { formatNumber, physical } from '../lib/geometry'
-import type { Monitor } from '../types'
+import { physical } from '../lib/geometry'
+import { UNIT_LABELS, formatLength } from '../lib/units'
+import type { Monitor, Unit } from '../types'
 
 interface Props {
   monitor: Monitor
+  unit: Unit
   onToggle: (id: string) => void
   onEdit: (monitor: Monitor) => void
   onDelete: (monitor: Monitor) => void
 }
 
-export function MonitorCard({ monitor, onToggle, onEdit, onDelete }: Props) {
+export function MonitorCard({ monitor, unit, onToggle, onEdit, onDelete }: Props) {
   const p = physical(monitor)
 
   return (
@@ -33,7 +35,8 @@ export function MonitorCard({ monitor, onToggle, onEdit, onDelete }: Props) {
         <div className="truncate font-semibold">{monitor.name}</div>
         <div className="text-xs text-[var(--text-muted)]">
           {monitor.resWidth}×{monitor.resHeight} · {monitor.diagonal}" ·{' '}
-          {formatNumber(p.widthIn)}×{formatNumber(p.heightIn)} in · {Math.round(p.ppi)} PPI ·{' '}
+          {formatLength(p.widthIn, unit, false)}×{formatLength(p.heightIn, unit, false)}{' '}
+          {UNIT_LABELS[unit]} · {Math.round(p.ppi)} PPI ·{' '}
           {monitor.curveRadius ? `${monitor.curveRadius}R` : 'Flat'}
         </div>
       </div>

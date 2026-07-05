@@ -6,8 +6,23 @@ export interface Monitor {
   diagonal: number
   /** Curvature radius in mm (e.g. 1500 for "1500R"); null means a flat panel. */
   curveRadius: number | null
+  /** Horizontal placement on the desk, percent from the left edge. */
+  deskX: number
+  /** Placement on the desk, percent from the far (back) edge. */
+  deskY: number
   visible: boolean
   colorSlot: number
+}
+
+/** Display unit for physical lengths. Diagonal, PPI and pixel pitch are exempt. */
+export type Unit = 'in' | 'cm' | 'mm'
+
+export interface Preferences {
+  unit: Unit
+  deskEnabled: boolean
+  /** Desk dimensions stored canonically in inches. */
+  deskWidth: number
+  deskDepth: number
 }
 
 export type Alignment =
@@ -32,5 +47,5 @@ export type TopViewAlign = 'back' | 'center' | 'front'
 /** The editable fields of a monitor — everything the form collects. */
 export type MonitorInput = Pick<
   Monitor,
-  'name' | 'resWidth' | 'resHeight' | 'diagonal' | 'curveRadius'
+  'name' | 'resWidth' | 'resHeight' | 'diagonal' | 'curveRadius' | 'deskX' | 'deskY'
 >

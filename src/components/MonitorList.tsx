@@ -1,14 +1,15 @@
-import type { Monitor } from '../types'
+import type { Monitor, Unit } from '../types'
 import { MonitorCard } from './MonitorCard'
 
 interface Props {
   monitors: Monitor[]
+  unit: Unit
   onToggle: (id: string) => void
   onEdit: (monitor: Monitor) => void
   onDelete: (monitor: Monitor) => void
 }
 
-export function MonitorList({ monitors, onToggle, onEdit, onDelete }: Props) {
+export function MonitorList({ monitors, unit, onToggle, onEdit, onDelete }: Props) {
   return (
     <section className="mb-6">
       <h2 className="mb-2.5 text-base font-semibold text-[var(--text-secondary)]">Monitors</h2>
@@ -20,6 +21,7 @@ export function MonitorList({ monitors, onToggle, onEdit, onDelete }: Props) {
             <MonitorCard
               key={m.id}
               monitor={m}
+              unit={unit}
               onToggle={onToggle}
               onEdit={onEdit}
               onDelete={onDelete}
