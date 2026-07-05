@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
 import { UNIT_LABELS, UNITS, formatLength, roundToUnit, toInches } from '../lib/units'
+import { NumberField } from './NumberField'
 import type { Preferences as Prefs, Unit } from '../types'
 
 interface Props {
@@ -13,59 +13,11 @@ const pctFieldClass =
   'min-h-11 w-16 rounded-lg border border-[var(--border)] bg-[var(--page-plane)] px-3 py-2 text-base text-[var(--text-primary)]'
 const labelClass = 'flex flex-col gap-1 text-sm text-[var(--text-secondary)]'
 
+const clampPercent = (n: number) => Math.min(100, Math.max(0, n))
+const nonNegative = (n: number) => Math.max(n, 0)
+
 export function Preferences({ preferences, onChange }: Props) {
   const { unit, deskEnabled, deskWidth, deskDepth, deskX, deskY } = preferences
-
-  // Inputs keep their own editable string so the field can be blanked while
-  // typing; the stored value only updates from valid input, and blur normalizes
-  // the text back to the committed (and, for percents, clamped) value.
-  const [widthStr, setWidthStr] = useState(String(roundToUnit(deskWidth, unit)))
-  const [depthStr, setDepthStr] = useState(String(roundToUnit(deskDepth, unit)))
-  const [xStr, setXStr] = useState(String(deskX))
-  const [yStr, setYStr] = useState(String(deskY))
-
-  // Re-sync the desk-size text when the unit changes (percents are unit-free).
-  useEffect(() => {
-    setWidthStr(String(roundToUnit(deskWidth, unit)))
-    setDepthStr(String(roundToUnit(deskDepth, unit)))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unit])
-
-  const changeDesk = (raw: string, key: 'deskWidth' | 'deskDepth', set: (s: string) => void) => {
-    set(raw)
-    const num = Number(raw)
-    if (raw !== '' && Number.isFinite(num) && num > 0) onChange({ [key]: toInches(num, unit) })
-  }
-
-  const blurDesk = (
-    raw: string,
-    key: 'deskWidth' | 'deskDepth',
-    current: number,
-    set: (s: string) => void,
-  ) => {
-    const num = Number(raw)
-    const inches = raw !== '' && Number.isFinite(num) && num > 0 ? toInches(num, unit) : current
-    onChange({ [key]: inches })
-    set(String(roundToUnit(inches, unit)))
-  }
-
-  const changePercent = (raw: string, key: 'deskX' | 'deskY', set: (s: string) => void) => {
-    set(raw)
-    const num = Number(raw)
-    if (raw !== '' && Number.isFinite(num)) onChange({ [key]: Math.min(100, Math.max(0, num)) })
-  }
-
-  const blurPercent = (
-    raw: string,
-    key: 'deskX' | 'deskY',
-    current: number,
-    set: (s: string) => void,
-  ) => {
-    const num = Number(raw)
-    const value = raw !== '' && Number.isFinite(num) ? Math.min(100, Math.max(0, num)) : current
-    onChange({ [key]: value })
-    set(String(value))
-  }
 
   return (
     <section className="mb-6">
@@ -120,27 +72,29 @@ export function Preferences({ preferences, onChange }: Props) {
             <div className="flex gap-4">
               <label className={labelClass}>
                 <span>Desk width ({UNIT_LABELS[unit]})</span>
-                <input
-                  type="number"
+                <NumberField
+                  value={deskWidth}
+                  onCommit={(n) => n !== null && onChange({ deskWidth: n })}
+                  parse={(v) => toInches(v, unit)}
+                  format={(v) => String(roundToUnit(v, unit))}
+                  clamp={nonNegative}
                   min={1}
                   step="any"
                   inputMode="decimal"
-                  value={widthStr}
-                  onChange={(e) => changeDesk(e.target.value, 'deskWidth', setWidthStr)}
-                  onBlur={(e) => blurDesk(e.target.value, 'deskWidth', deskWidth, setWidthStr)}
                   className={fieldClass}
                 />
               </label>
               <label className={labelClass}>
                 <span>Desk depth ({UNIT_LABELS[unit]})</span>
-                <input
-                  type="number"
+                <NumberField
+                  value={deskDepth}
+                  onCommit={(n) => n !== null && onChange({ deskDepth: n })}
+                  parse={(v) => toInches(v, unit)}
+                  format={(v) => String(roundToUnit(v, unit))}
+                  clamp={nonNegative}
                   min={1}
                   step="any"
                   inputMode="decimal"
-                  value={depthStr}
-                  onChange={(e) => changeDesk(e.target.value, 'deskDepth', setDepthStr)}
-                  onBlur={(e) => blurDesk(e.target.value, 'deskDepth', deskDepth, setDepthStr)}
                   className={fieldClass}
                 />
               </label>
@@ -151,15 +105,14 @@ export function Preferences({ preferences, onChange }: Props) {
               <label className={labelClass}>
                 <span>Monitor X (% from left)</span>
                 <div className="flex items-center gap-1.5">
-                  <input
-                    type="number"
+                  <NumberField
+                    value={deskX}
+                    onCommit={(n) => n !== null && onChange({ deskX: n })}
+                    clamp={clampPercent}
                     min={0}
                     max={100}
                     step={1}
                     inputMode="numeric"
-                    value={xStr}
-                    onChange={(e) => changePercent(e.target.value, 'deskX', setXStr)}
-                    onBlur={(e) => blurPercent(e.target.value, 'deskX', deskX, setXStr)}
                     className={pctFieldClass}
                   />
                   <span className="text-xs whitespace-nowrap text-[var(--text-muted)]">
@@ -170,15 +123,14 @@ export function Preferences({ preferences, onChange }: Props) {
               <label className={labelClass}>
                 <span>Monitor Y (% from far edge)</span>
                 <div className="flex items-center gap-1.5">
-                  <input
-                    type="number"
+                  <NumberField
+                    value={deskY}
+                    onCommit={(n) => n !== null && onChange({ deskY: n })}
+                    clamp={clampPercent}
                     min={0}
                     max={100}
                     step={1}
                     inputMode="numeric"
-                    value={yStr}
-                    onChange={(e) => changePercent(e.target.value, 'deskY', setYStr)}
-                    onBlur={(e) => blurPercent(e.target.value, 'deskY', deskY, setYStr)}
                     className={pctFieldClass}
                   />
                   <span className="text-xs whitespace-nowrap text-[var(--text-muted)]">

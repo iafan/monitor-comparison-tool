@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { CURVATURE_PRESETS, PRESETS } from '../constants'
+import { NumberField } from './NumberField'
 import type { Monitor, MonitorInput } from '../types'
 
 interface Props {
@@ -9,8 +10,8 @@ interface Props {
   onClose: () => void
 }
 
-function presetKey(w: number | '', h: number | ''): string {
-  if (w === '' || h === '') return ''
+function presetKey(w: number | null, h: number | null): string {
+  if (w === null || h === null) return ''
   const match = PRESETS.find((p) => p.resWidth === w && p.resHeight === h)
   return match ? `${match.resWidth}x${match.resHeight}` : ''
 }
@@ -21,13 +22,14 @@ const labelClass = 'flex flex-col gap-1 text-sm text-[var(--text-secondary)]'
 
 export function MonitorFormModal({ editing, onSave, onClose }: Props) {
   const [name, setName] = useState(editing?.name ?? '')
-  const [resWidth, setResWidth] = useState<number | ''>(editing?.resWidth ?? '')
-  const [resHeight, setResHeight] = useState<number | ''>(editing?.resHeight ?? '')
-  const [diagonal, setDiagonal] = useState<number | ''>(editing?.diagonal ?? '')
+  const [resWidth, setResWidth] = useState<number | null>(editing?.resWidth ?? null)
+  const [resHeight, setResHeight] = useState<number | null>(editing?.resHeight ?? null)
+  const [diagonal, setDiagonal] = useState<number | null>(editing?.diagonal ?? null)
   const [curved, setCurved] = useState(Boolean(editing?.curveRadius))
-  const [curveRadius, setCurveRadius] = useState<number | ''>(editing?.curveRadius ?? '')
+  const [curveRadius, setCurveRadius] = useState<number | null>(editing?.curveRadius ?? null)
   const preset = presetKey(resWidth, resHeight)
-  const radiusPreset = CURVATURE_PRESETS.includes(Number(curveRadius)) ? String(curveRadius) : ''
+  const radiusPreset =
+    curveRadius !== null && CURVATURE_PRESETS.includes(curveRadius) ? String(curveRadius) : ''
 
   // Close on Escape.
   useEffect(() => {
@@ -48,7 +50,7 @@ export function MonitorFormModal({ editing, onSave, onClose }: Props) {
   const setCurvature = (isCurved: boolean) => {
     setCurved(isCurved)
     // Offer a sensible default radius the moment "Curved" is chosen.
-    if (isCurved && curveRadius === '') setCurveRadius(1800)
+    if (isCurved && curveRadius === null) setCurveRadius(1800)
   }
 
   const submit = (e: React.FormEvent) => {
@@ -114,10 +116,10 @@ export function MonitorFormModal({ editing, onSave, onClose }: Props) {
           <div className="flex gap-3">
             <label className={`${labelClass} flex-1`}>
               <span>Res. width (px)</span>
-              <input
-                type="number"
+              <NumberField
                 value={resWidth}
-                onChange={(e) => setResWidth(e.target.value === '' ? '' : Number(e.target.value))}
+                onCommit={(n) => setResWidth(n)}
+                allowEmpty
                 required
                 min={1}
                 step={1}
@@ -127,10 +129,10 @@ export function MonitorFormModal({ editing, onSave, onClose }: Props) {
             </label>
             <label className={`${labelClass} flex-1`}>
               <span>Res. height (px)</span>
-              <input
-                type="number"
+              <NumberField
                 value={resHeight}
-                onChange={(e) => setResHeight(e.target.value === '' ? '' : Number(e.target.value))}
+                onCommit={(n) => setResHeight(n)}
+                allowEmpty
                 required
                 min={1}
                 step={1}
@@ -142,10 +144,10 @@ export function MonitorFormModal({ editing, onSave, onClose }: Props) {
 
           <label className={labelClass}>
             <span>Diagonal size (inches)</span>
-            <input
-              type="number"
+            <NumberField
               value={diagonal}
-              onChange={(e) => setDiagonal(e.target.value === '' ? '' : Number(e.target.value))}
+              onCommit={(n) => setDiagonal(n)}
+              allowEmpty
               required
               min={1}
               step={0.1}
@@ -186,12 +188,10 @@ export function MonitorFormModal({ editing, onSave, onClose }: Props) {
               </label>
               <label className={`${labelClass} flex-1`}>
                 <span>Radius (mm)</span>
-                <input
-                  type="number"
+                <NumberField
                   value={curveRadius}
-                  onChange={(e) =>
-                    setCurveRadius(e.target.value === '' ? '' : Number(e.target.value))
-                  }
+                  onCommit={(n) => setCurveRadius(n)}
+                  allowEmpty
                   min={100}
                   step={50}
                   inputMode="numeric"
