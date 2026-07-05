@@ -37,7 +37,7 @@ export function saveMonitors(monitors: Monitor[]): void {
 
 export function loadAlignment(): Alignment {
   const raw = localStorage.getItem(ALIGN_KEY)
-  return (ALIGNMENTS as string[]).includes(raw ?? '') ? (raw as Alignment) : 'bottom-left'
+  return (ALIGNMENTS as string[]).includes(raw ?? '') ? (raw as Alignment) : 'center'
 }
 
 export function saveAlignment(alignment: Alignment): void {
