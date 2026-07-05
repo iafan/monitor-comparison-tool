@@ -56,13 +56,6 @@ export function TopView({
     // On a desk we always draw (flat panels included); otherwise only when curved.
     if (visible.length === 0 || (!deskEnabled && !anyCurved)) return null
 
-    const legend = visible.map((m) => ({
-      id: m.id,
-      name: m.name,
-      color: seriesColor(m.colorSlot),
-      radius: m.curveRadius,
-    }))
-
     // Arrange the monitors as a stack: horizontal by the front-view alignment's
     // horizontal component, depth by the top-view alignment.
     const hAlign = alignment === 'center' ? 'center' : alignment.split('-')[1]
@@ -114,7 +107,7 @@ export function TopView({
       const maxY = Math.max(D, gymax + shiftY) + pad
       const viewBox = `${minX.toFixed(2)} ${minY.toFixed(2)} ${(maxX - minX).toFixed(2)} ${(maxY - minY).toFixed(2)}`
 
-      return { mode: 'desk' as const, viewBox, desk: { w: W, h: D }, polylines, legend }
+      return { mode: 'desk' as const, viewBox, desk: { w: W, h: D }, polylines }
     }
 
     // Curvature-only mode: tight fit around the arranged stack.
@@ -132,7 +125,7 @@ export function TopView({
       points: a.pts.map(([x, y]) => `${(x + shiftX).toFixed(2)},${(y + shiftY).toFixed(2)}`).join(' '),
     }))
 
-    return { mode: 'arcs' as const, viewBox: `0 0 ${vbW.toFixed(2)} ${vbH.toFixed(2)}`, polylines, legend }
+    return { mode: 'arcs' as const, viewBox: `0 0 ${vbW.toFixed(2)} ${vbH.toFixed(2)}`, polylines }
   }, [monitors, alignment, topViewAlign, deskEnabled, deskWidth, deskDepth, deskX, deskY])
 
   if (!layout) return null
@@ -145,21 +138,7 @@ export function TopView({
 
   return (
     <section className="mb-6 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] p-3">
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-        <h2 className="text-sm font-semibold text-[var(--text-secondary)]">{heading}</h2>
-        <div className="flex flex-wrap gap-x-3 gap-y-1">
-          {layout.legend.map((a) => (
-            <span
-              key={a.id}
-              className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]"
-            >
-              <span className="size-2.5 flex-none rounded-[3px]" style={{ background: a.color }} />
-              {a.name}
-              <span className="text-[var(--text-muted)]">{a.radius ? `${a.radius}R` : 'Flat'}</span>
-            </span>
-          ))}
-        </div>
-      </div>
+      <h2 className="mb-2 text-sm font-semibold text-[var(--text-secondary)]">{heading}</h2>
       <svg
         viewBox={layout.viewBox}
         preserveAspectRatio="xMidYMid meet"
