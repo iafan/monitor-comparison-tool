@@ -19,8 +19,14 @@ export function TopMenu({ tool, onToolChange, theme, onToggleTheme }: Props) {
   const isDark = theme === 'dark'
   return (
     <div className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--surface-1)]">
-      <nav className="mx-auto flex max-w-[900px] items-center justify-between gap-3 px-4 py-2">
-        <label className="relative flex items-center">
+      <nav className="mx-auto grid max-w-[900px] grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-2">
+        <img
+          src={isDark ? './icon-dark.svg' : './icon.svg'}
+          alt="Monitorture"
+          className="size-10 justify-self-start rounded-full"
+        />
+
+        <label className="relative flex items-center justify-self-center">
           <span className="sr-only">Select tool</span>
           <select
             value={tool}
@@ -49,7 +55,7 @@ export function TopMenu({ tool, onToolChange, theme, onToggleTheme }: Props) {
           onClick={onToggleTheme}
           aria-pressed={isDark}
           title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-          className="flex size-11 flex-none cursor-pointer items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface-1)] text-[var(--text-secondary)]"
+          className="flex size-11 flex-none cursor-pointer items-center justify-center justify-self-end rounded-lg border border-[var(--border)] bg-[var(--surface-1)] text-[var(--text-secondary)]"
         >
           <span className="sr-only">{isDark ? 'Switch to light mode' : 'Switch to dark mode'}</span>
           {isDark ? (

@@ -11,8 +11,8 @@
     </clipPath>
   </defs>
   <g clip-path="url(#screen)">
-    <rect x="0" y="0" width="1200" height="1200" fill="#000000"/>
-    <g fill="none" stroke="#ffffff" stroke-width="26">
+    <rect x="0" y="0" width="1200" height="1200" fill="#ffffff"/>
+    <g fill="none" stroke="#000000" stroke-width="26">
       <g stroke-opacity="0.9">
         <line x1="200" y1="0" x2="200" y2="1200"/>
         <line x1="400" y1="0" x2="400" y2="1200"/>
@@ -31,7 +31,7 @@
   </g>
 
   <!-- M: rays meeting at the icon center + bar-seam outlines -->
-  <g fill="none" stroke="#ffffff" stroke-width="26" stroke-linejoin="round" stroke-linecap="round">
+  <g fill="none" stroke="#000000" stroke-width="26" stroke-linejoin="round" stroke-linecap="round">
     <polyline points="0,360 600,600 1200,360"/>
     <line x1="400" y1="520" x2="400" y2="1200"/>
     <line x1="800" y1="520" x2="800" y2="1200"/>
