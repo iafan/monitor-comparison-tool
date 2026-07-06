@@ -19,6 +19,12 @@ export function classLabel(c: MonitorClass): string {
   return `${c.diagonal}" · ${c.resWidth}×${c.resHeight} · ${curve}`
 }
 
+/** The default monitor name suggested/assigned for a class, e.g. `34" 3440×1440 1800R`. */
+export function classDefaultName(c: MonitorClass): string {
+  const curve = c.curveRadius ? ` ${c.curveRadius}R` : ''
+  return `${c.diagonal}" ${c.resWidth}×${c.resHeight}${curve}`
+}
+
 /**
  * The generic geometry classes. Add a new class here, then create a matching
  * per-class file under `models/` (named exactly `<id>.ts`) for its products.

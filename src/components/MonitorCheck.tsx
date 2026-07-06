@@ -159,25 +159,41 @@ function PatternContent({ pattern, showLabels }: { pattern: Pattern; showLabels:
   return null
 }
 
-export function MonitorCheck() {
-  const [active, setActive] = useState<number | null>(null)
+interface Props {
+  /** Selected screen id (from the URL/app state), or null for the tile grid. */
+  screen: string | null
+  setScreen: (screen: string | null) => void
+}
+
+export function MonitorCheck({ screen, setScreen }: Props) {
   const [showHint, setShowHint] = useState(true)
   const surfaceRef = useRef<HTMLDivElement>(null)
   const hintTimer = useRef<number | undefined>(undefined)
 
-  const open = useCallback((index: number) => {
-    setActive(index)
-    surfaceRef.current?.requestFullscreen?.().catch(() => {})
-  }, [])
+  // Derive the active index from the selected screen id (−1/invalid ⇒ none).
+  const idx = screen ? PATTERNS.findIndex((p) => p.id === screen) : -1
+  const active = idx >= 0 ? idx : null
+
+  const open = useCallback(
+    (index: number) => {
+      setScreen(PATTERNS[index].id)
+      surfaceRef.current?.requestFullscreen?.().catch(() => {})
+    },
+    [setScreen],
+  )
 
   const close = useCallback(() => {
     if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {})
-    setActive(null)
-  }, [])
+    setScreen(null)
+  }, [setScreen])
 
-  const step = useCallback((delta: number) => {
-    setActive((i) => (i === null ? i : (i + delta + PATTERNS.length) % PATTERNS.length))
-  }, [])
+  const step = useCallback(
+    (delta: number) => {
+      if (active === null) return
+      setScreen(PATTERNS[(active + delta + PATTERNS.length) % PATTERNS.length].id)
+    },
+    [active, setScreen],
+  )
 
   const pokeHint = useCallback(() => {
     setShowHint(true)
@@ -201,7 +217,7 @@ export function MonitorCheck() {
       }
     }
     const onFsChange = () => {
-      if (!document.fullscreenElement) setActive(null)
+      if (!document.fullscreenElement) setScreen(null)
     }
     window.addEventListener('keydown', onKey)
     document.addEventListener('fullscreenchange', onFsChange)
@@ -210,7 +226,7 @@ export function MonitorCheck() {
       document.removeEventListener('fullscreenchange', onFsChange)
       window.clearTimeout(hintTimer.current)
     }
-  }, [active, close, step, pokeHint])
+  }, [active, close, step, pokeHint, setScreen])
 
   const current = active === null ? null : PATTERNS[active]
 

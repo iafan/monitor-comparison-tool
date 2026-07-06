@@ -9,20 +9,38 @@ import { Preferences } from './Preferences'
 import { AlignmentPicker } from './AlignmentPicker'
 import { DeskSettings } from './DeskSettings'
 import { MonitorFormModal } from './MonitorFormModal'
-import { useMonitors } from '../hooks/useMonitors'
-import { useAlignment } from '../hooks/useAlignment'
-import { useTopViewAlign } from '../hooks/useTopViewAlign'
-import { usePreferences } from '../hooks/usePreferences'
-import type { Monitor, MonitorInput } from '../types'
+import type { Alignment, Monitor, MonitorInput, Preferences as Prefs, TopViewAlign } from '../types'
+
+interface Props {
+  monitors: Monitor[]
+  addMonitor: (input: MonitorInput) => void
+  updateMonitor: (id: string, input: MonitorInput) => void
+  deleteMonitor: (id: string) => void
+  toggleVisibility: (id: string) => void
+  alignment: Alignment
+  setAlignment: (a: Alignment) => void
+  topViewAlign: TopViewAlign
+  setTopViewAlign: (a: TopViewAlign) => void
+  preferences: Prefs
+  updatePreferences: (patch: Partial<Prefs>) => void
+}
 
 /** null = modal closed; { editing } = open (editing null means "add new"). */
 type ModalState = { editing: Monitor | null } | null
 
-export function MonitorComparison() {
-  const { monitors, addMonitor, updateMonitor, deleteMonitor, toggleVisibility } = useMonitors()
-  const { alignment, setAlignment } = useAlignment()
-  const { topViewAlign, setTopViewAlign } = useTopViewAlign()
-  const { preferences, update: updatePreferences } = usePreferences()
+export function MonitorComparison({
+  monitors,
+  addMonitor,
+  updateMonitor,
+  deleteMonitor,
+  toggleVisibility,
+  alignment,
+  setAlignment,
+  topViewAlign,
+  setTopViewAlign,
+  preferences,
+  updatePreferences,
+}: Props) {
   const [modal, setModal] = useState<ModalState>(null)
 
   const { unit, deskEnabled, deskWidth, deskDepth, deskX, deskY } = preferences

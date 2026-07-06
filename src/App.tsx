@@ -2,20 +2,32 @@ import { TopMenu } from './components/TopMenu'
 import { MonitorComparison } from './components/MonitorComparison'
 import { MonitorCheck } from './components/MonitorCheck'
 import { MonitorGeometry } from './components/MonitorGeometry'
-import { useTool } from './hooks/useTool'
-import { useTheme } from './hooks/useTheme'
+import { useAppState } from './hooks/useAppState'
 
 export function App() {
-  const { tool, setTool } = useTool()
-  const { theme, toggle } = useTheme()
+  const app = useAppState()
 
   return (
     <>
-      <TopMenu tool={tool} onToolChange={setTool} theme={theme} onToggleTheme={toggle} />
+      <TopMenu tool={app.tool} onToolChange={app.setTool} theme={app.theme} onToggleTheme={app.toggleTheme} />
       <main className="mx-auto max-w-[900px] px-4 pt-6 pb-12">
-        {tool === 'comparison' && <MonitorComparison />}
-        {tool === 'check' && <MonitorCheck />}
-        {tool === 'geometry' && <MonitorGeometry />}
+        {app.tool === 'comparison' && (
+          <MonitorComparison
+            monitors={app.monitors}
+            addMonitor={app.addMonitor}
+            updateMonitor={app.updateMonitor}
+            deleteMonitor={app.deleteMonitor}
+            toggleVisibility={app.toggleVisibility}
+            alignment={app.alignment}
+            setAlignment={app.setAlignment}
+            topViewAlign={app.topViewAlign}
+            setTopViewAlign={app.setTopViewAlign}
+            preferences={app.preferences}
+            updatePreferences={app.updatePreferences}
+          />
+        )}
+        {app.tool === 'check' && <MonitorCheck screen={app.checkScreen} setScreen={app.setCheckScreen} />}
+        {app.tool === 'geometry' && <MonitorGeometry />}
       </main>
     </>
   )

@@ -1,4 +1,4 @@
-import { MONITOR_CLASSES, classLabel, makeClassId } from './monitorClasses'
+import { MONITOR_CLASSES, classDefaultName, classLabel, makeClassId } from './monitorClasses'
 import { MODEL_SOURCES } from './modelSources'
 import type { MonitorClass, MonitorModel, SourceLink } from './types'
 
@@ -68,5 +68,5 @@ for (const id of Object.keys(MODEL_SOURCES)) {
   }
 }
 
-export { MONITOR_CLASSES, MODEL_SOURCES, classLabel, makeClassId }
+export { MONITOR_CLASSES, MODEL_SOURCES, classDefaultName, classLabel, makeClassId }
 export type { MonitorClass, MonitorModel, PanelType, SourceLink } from './types'

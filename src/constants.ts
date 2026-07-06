@@ -9,6 +9,19 @@ export const TOOL_KEY = 'monitor-comparison:tool:v1'
 export const THEME_KEY = 'monitor-comparison:theme:v1'
 export const COLOR_SLOTS = 8
 
+/** Valid Monitor Check screen ids (mirrors PATTERNS in MonitorCheck); used to validate the URL `scr` value. */
+export const CHECK_SCREEN_IDS = [
+  'white',
+  'black',
+  'red',
+  'green',
+  'blue',
+  'vlines',
+  'hlines',
+  'gradient',
+  'gamma',
+] as const
+
 /** Desk defaults ~140 × 70 cm, stored in inches; monitors centered near the back. */
 export const DEFAULT_PREFERENCES: Preferences = {
   unit: 'in',
