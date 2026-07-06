@@ -14,6 +14,10 @@ export interface Monitor {
   curveRadius: number | null
   visible: boolean
   colorSlot: number
+  /** Provenance: the generic class this was created from, if any (see src/data). */
+  classId?: string
+  /** Provenance: the specific model this was created from, if any. */
+  modelId?: string
 }
 
 /** Display unit for physical lengths. Diagonal, PPI and pixel pitch are exempt. */
@@ -52,5 +56,5 @@ export type TopViewAlign = 'back' | 'center' | 'front'
 /** The editable fields of a monitor — everything the form collects. */
 export type MonitorInput = Pick<
   Monitor,
-  'name' | 'resWidth' | 'resHeight' | 'diagonal' | 'curveRadius'
+  'name' | 'resWidth' | 'resHeight' | 'diagonal' | 'curveRadius' | 'classId' | 'modelId'
 >

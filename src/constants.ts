@@ -1,3 +1,4 @@
+import { classGeometry } from './data'
 import type { Alignment, Monitor, Preferences, TopViewAlign } from './types'
 
 export const STORAGE_KEY = 'monitor-comparison:monitors:v1'
@@ -70,26 +71,15 @@ export const PRESETS: Preset[] = [
 /** Typical curved-monitor radii in mm; smaller = more aggressively curved. */
 export const CURVATURE_PRESETS = [800, 1000, 1500, 1800, 2300, 2500, 3800]
 
+/** Builds a seed monitor from a generic class, so defaults reference the data layer. */
+function seedFromClass(classId: string, name: string, colorSlot: number): Omit<Monitor, 'id'> {
+  return { name, ...classGeometry(classId), visible: true, colorSlot, classId }
+}
+
 /** Seeded on first load; QHD 31.5" and WQHD 34" as requested. */
 export const DEFAULT_MONITORS: Omit<Monitor, 'id'>[] = [
-  {
-    name: 'QHD 31.5"',
-    resWidth: 2560,
-    resHeight: 1440,
-    diagonal: 31.5,
-    curveRadius: null,
-    visible: true,
-    colorSlot: 0,
-  },
-  {
-    name: 'WQHD 34"',
-    resWidth: 3440,
-    resHeight: 1440,
-    diagonal: 34,
-    curveRadius: 1800,
-    visible: true,
-    colorSlot: 1,
-  },
+  seedFromClass('31.5-2560x1440', 'QHD 31.5"', 0),
+  seedFromClass('34-3440x1440-1800r', 'WQHD 34"', 1),
 ]
 
 /** Maps a monitor's color slot to one of the eight categorical palette tokens. */
