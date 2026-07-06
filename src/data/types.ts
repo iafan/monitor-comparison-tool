@@ -1,6 +1,12 @@
 /** Panel technologies we distinguish on specific models. */
 export type PanelType = 'IPS' | 'VA' | 'TN' | 'OLED' | 'QD-OLED' | 'WOLED'
 
+/** A research source: a human-readable name and its URL. */
+export interface SourceLink {
+  name: string
+  url: string
+}
+
 /**
  * A generic monitor "class" — the geometry the comparison tool needs to render a
  * screen, independent of any specific product. Identified by a stable id built

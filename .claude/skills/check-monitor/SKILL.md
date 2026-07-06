@@ -48,12 +48,17 @@ Dell ultrawide"), first identify the exact model, then proceed.
      `<diagonal>-<width>x<height>[-<curve>r]`, e.g. `34-3440x1440-1800r` (curved) or
      `31.5-2560x1440` (flat, no curve suffix).
    - `src/data/models/<class-id>.ts` — one file per class, exporting `models`.
-   - `src/data/index.ts` — the per-class imports + integrity checks.
+   - `src/data/modelSources.ts` — `MODEL_SOURCES`, keyed by model id → the list of
+     `{ name, url }` sources you cross-checked for that model.
+   - `src/data/index.ts` — the per-class imports + integrity checks (which also assert
+     every `MODEL_SOURCES` key is a real model id).
 
    Work out the monitor's **class id** from its geometry. State whether that class
    already exists in `MONITOR_CLASSES`, and produce a **paste-ready model entry** (see
    output below). If the class is new, also give the class object to add and note that a
    new `src/data/models/<class-id>.ts` file + its import line in `index.ts` are needed.
+   Also produce a **`MODEL_SOURCES` entry** for `src/data/modelSources.ts`, keyed by the
+   same model id, listing every source you actually used as `{ name, url }`.
    (The Custom-mode resolution/curvature pickers in `src/constants.ts` — `PRESETS`,
    `CURVATURE_PRESETS` — are separate; mention them only if a resolution/radius the tool
    can't yet offer is worth adding.)
@@ -125,8 +130,15 @@ Paste into `src/data/models/<class-id>.ts` (create the file + add its import to
 
 <if the class is NEW, also give the MonitorClass object to add to MONITOR_CLASSES>
 
+Paste into `src/data/modelSources.ts` under `MODEL_SOURCES` (same model id key):
+
+    '<brand-model-slug>': [
+      { name: '<Source name>', url: '<url>' },
+      ...every source actually used
+    ],
+
 Sources:
-- [title](url)  ← every source actually used
+- [title](url)  ← every source actually used (same set as the MODEL_SOURCES entry)
 ```
 
 ## Rules
