@@ -93,7 +93,6 @@ export function MonitorFormModal({ editing, onSave, onClose }: Props) {
     setCurveRadius(c.curveRadius)
     setClassId(c.id)
     setModelId(undefined)
-    setName(classNameSuggestion(c))
   }
 
   const selectModel = (m: MonitorModel) => {
@@ -106,7 +105,6 @@ export function MonitorFormModal({ editing, onSave, onClose }: Props) {
     setCurveRadius(c.curveRadius)
     setClassId(c.id)
     setModelId(m.id)
-    setName(m.name)
   }
 
   const q = (s: string) => s.trim().toLowerCase()
@@ -126,10 +124,20 @@ export function MonitorFormModal({ editing, onSave, onClose }: Props) {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
-    const trimmed = name.trim()
-    if (!trimmed || !resWidth || !resHeight || !diagonal) return
+    // Name is arbitrary only for Custom; Class/Model derive a fixed name from the selection.
+    let finalName = name.trim()
+    if (source === 'class') {
+      const c = classId ? getClass(classId) : undefined
+      if (!c) return
+      finalName = classNameSuggestion(c)
+    } else if (source === 'model') {
+      const m = MONITOR_MODELS.find((x) => x.id === modelId)
+      if (!m) return
+      finalName = m.name
+    }
+    if (!finalName || !resWidth || !resHeight || !diagonal) return
     onSave({
-      name: trimmed,
+      name: finalName,
       resWidth,
       resHeight,
       diagonal,
@@ -156,51 +164,50 @@ export function MonitorFormModal({ editing, onSave, onClose }: Props) {
           {editing ? 'Edit monitor' : 'Add monitor'}
         </h2>
         <form onSubmit={submit} className="flex flex-col gap-3.5">
-          <label className={labelClass}>
-            <span>Name</span>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              maxLength={40}
-              placeholder={'e.g. QHD 27"'}
-              autoFocus
-              className={fieldClass}
-            />
-          </label>
-
-          {/* Source selector — Custom keeps the manual fields; Class/Model pick from the catalogue. */}
-          <div className="flex flex-col gap-1 text-sm text-[var(--text-secondary)]">
-            <span>Define by</span>
-            <div
-              className="inline-flex overflow-hidden rounded-lg border border-[var(--border)]"
-              role="group"
-              aria-label="How to define the monitor"
-            >
-              {SOURCES.map((s) => {
-                const selected = s.value === source
-                return (
-                  <button
-                    key={s.value}
-                    type="button"
-                    onClick={() => setSource(s.value)}
-                    aria-pressed={selected}
-                    className={`min-h-11 flex-1 px-3 text-sm font-semibold ${
-                      selected
-                        ? 'bg-[var(--series-1)] text-white'
-                        : 'bg-[var(--page-plane)] text-[var(--text-secondary)]'
-                    }`}
-                  >
-                    {s.label}
-                  </button>
-                )
-              })}
-            </div>
+          {/* Source selector — Custom keeps the manual fields (incl. name); Class/Model pick from the catalogue. */}
+          <div
+            className="inline-flex overflow-hidden rounded-lg border border-[var(--border)]"
+            role="group"
+            aria-label="How to define the monitor"
+          >
+            {SOURCES.map((s) => {
+              const selected = s.value === source
+              return (
+                <button
+                  key={s.value}
+                  type="button"
+                  onClick={() => setSource(s.value)}
+                  aria-pressed={selected}
+                  className={`min-h-11 flex-1 px-3 text-sm font-semibold ${
+                    selected
+                      ? 'bg-[var(--series-1)] text-white'
+                      : 'bg-[var(--page-plane)] text-[var(--text-secondary)]'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              )
+            })}
           </div>
 
+          {/* Fixed-height body (matches the Custom tab) so the dialog doesn't resize when switching tabs. */}
+          <div className="flex min-h-[402px] flex-col gap-3.5">
           {source === 'custom' && (
             <>
+              <label className={labelClass}>
+                <span>Name</span>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  maxLength={40}
+                  placeholder={'e.g. QHD 27"'}
+                  autoFocus
+                  className={fieldClass}
+                />
+              </label>
+
               <label className={labelClass}>
                 <span>Preset</span>
                 <select value={preset} onChange={(e) => applyPreset(e.target.value)} className={fieldClass}>
@@ -399,6 +406,7 @@ export function MonitorFormModal({ editing, onSave, onClose }: Props) {
               </ul>
             </div>
           )}
+          </div>
 
           <div className="mt-2 flex justify-end gap-2.5">
             <button
