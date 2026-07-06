@@ -54,7 +54,7 @@ export function MonitorCard({ monitor, unit, onToggle, onEdit, onDelete }: Props
               type="button"
               onClick={() => setShowMatches((v) => !v)}
               aria-expanded={showMatches}
-              className="cursor-pointer text-[var(--text-secondary)] underline"
+              className="cursor-pointer text-left text-[var(--text-secondary)] underline"
             >
               {matches.length} matching monitor{matches.length === 1 ? '' : 's'} in the database
             </button>
