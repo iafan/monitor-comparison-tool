@@ -23,7 +23,7 @@ export function TopMenu({ tool, onToolChange, theme, onToggleTheme }: Props) {
         <img
           src={isDark ? './icon-dark.svg' : './icon.svg'}
           alt="Monitorture"
-          className="size-10 justify-self-start rounded-full"
+          className="size-8 justify-self-start rounded-full"
         />
 
         <label className="relative flex items-center justify-self-center">
