@@ -35,7 +35,9 @@ function readFragment(): string {
 function initialState(): { state: AppState; fromUrl: boolean } {
   const fragment = readFragment()
   if (fragment) {
-    return { state: applyDecoded(defaultState(seedDefaults()), decodeState(fragment)), fromUrl: true }
+    // Theme is a local preference, never carried in a shared link — take it from storage.
+    const state = { ...applyDecoded(defaultState(seedDefaults()), decodeState(fragment)), themeChoice: loadTheme() }
+    return { state, fromUrl: true }
   }
   return {
     state: {
@@ -93,11 +95,11 @@ export function useAppState(): AppStore {
     window.history.replaceState(null, '', url)
   }, [state])
 
-  // Persist to localStorage only once the visitor owns this view.
+  // Persist the view to localStorage only once the visitor owns it. (Theme is
+  // handled separately in toggleTheme — it's always saved and never gated.)
   useEffect(() => {
     if (!persist.current) return
     saveTool(state.tool)
-    if (state.themeChoice) saveTheme(state.themeChoice)
     saveMonitors(state.monitors)
     saveAlignment(state.alignment)
     saveTopViewAlign(state.topViewAlign)
@@ -109,7 +111,8 @@ export function useAppState(): AppStore {
     const onHashChange = () => {
       const fragment = readFragment()
       if (fragment === encodeState(state)) return // our own write
-      setState(applyDecoded(defaultState(seedDefaults()), decodeState(fragment)))
+      // Keep the viewer's own theme; the URL never dictates it.
+      setState((s) => ({ ...applyDecoded(defaultState(seedDefaults()), decodeState(fragment)), themeChoice: s.themeChoice }))
       persist.current = false
     }
     window.addEventListener('hashchange', onHashChange)
@@ -124,10 +127,14 @@ export function useAppState(): AppStore {
 
   const setTool = useCallback((tool: Tool) => mutate((s) => ({ ...s, tool })), [mutate])
 
-  const toggleTheme = useCallback(
-    () => mutate((s) => ({ ...s, themeChoice: (s.themeChoice ?? systemTheme()) === 'dark' ? 'light' : 'dark' })),
-    [mutate],
-  )
+  // Theme is the viewer's own preference: always persisted, never in the URL, and
+  // it doesn't flip the ephemeral flag (flipping dark mode on a shared link must
+  // not adopt that link's monitors into the viewer's localStorage).
+  const toggleTheme = useCallback(() => {
+    const next: Theme = resolvedTheme === 'dark' ? 'light' : 'dark'
+    saveTheme(next)
+    setState((s) => ({ ...s, themeChoice: next }))
+  }, [resolvedTheme])
 
   const setAlignment = useCallback((alignment: Alignment) => mutate((s) => ({ ...s, alignment })), [mutate])
 

@@ -17,14 +17,30 @@ const TOOL_ORDER: Tool[] = ['comparison', 'check', 'geometry']
 
 export function TopMenu({ tool, onToolChange, theme, onToggleTheme }: Props) {
   const isDark = theme === 'dark'
+
+  // Clicking the logo returns to a clean "/" URL and reloads, so the app
+  // re-reads the stored defaults (dropping any shared-link view in the hash).
+  const goHome = (e: React.MouseEvent) => {
+    e.preventDefault()
+    window.history.replaceState(null, '', window.location.pathname + window.location.search)
+    window.location.reload()
+  }
+
   return (
     <div className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--surface-1)]">
       <nav className="mx-auto grid max-w-[900px] grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-2">
-        <img
-          src={isDark ? './icon-dark.svg' : './icon.svg'}
-          alt="Monitorture"
-          className="size-8 justify-self-start rounded-full"
-        />
+        <a
+          href="./"
+          onClick={goHome}
+          title="Monitorture — reset to your saved view"
+          className="size-8 justify-self-start"
+        >
+          <img
+            src={isDark ? './icon-dark.svg' : './icon.svg'}
+            alt="Monitorture home"
+            className="size-8 cursor-pointer rounded-full"
+          />
+        </a>
 
         <label className="relative flex items-center justify-self-center">
           <span className="sr-only">Select tool</span>

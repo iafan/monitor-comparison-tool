@@ -1,4 +1,4 @@
-import { classGeometry } from './data'
+import { classDefaultName, getClass } from './data'
 import type { Alignment, Monitor, Preferences, TopViewAlign } from './types'
 
 export const STORAGE_KEY = 'monitor-comparison:monitors:v1'
@@ -84,15 +84,30 @@ export const PRESETS: Preset[] = [
 /** Typical curved-monitor radii in mm; smaller = more aggressively curved. */
 export const CURVATURE_PRESETS = [800, 1000, 1500, 1800, 2300, 2500, 3800]
 
-/** Builds a seed monitor from a generic class, so defaults reference the data layer. */
-function seedFromClass(classId: string, name: string, colorSlot: number): Omit<Monitor, 'id'> {
-  return { name, ...classGeometry(classId), visible: true, colorSlot, classId }
+/**
+ * Builds a seed monitor from a generic class. The name is the class's default
+ * name so the seed is a true class reference — it serializes compactly to
+ * `=<classId>` in the URL (no repeated geometry, no encoded name).
+ */
+function seedFromClass(classId: string, colorSlot: number): Omit<Monitor, 'id'> {
+  const c = getClass(classId)
+  if (!c) throw new Error(`Unknown monitor class "${classId}"`)
+  return {
+    name: classDefaultName(c),
+    resWidth: c.resWidth,
+    resHeight: c.resHeight,
+    diagonal: c.diagonal,
+    curveRadius: c.curveRadius,
+    visible: true,
+    colorSlot,
+    classId,
+  }
 }
 
-/** Seeded on first load; QHD 31.5" and WQHD 34" as requested. */
+/** Seeded on first load: a 31.5" QHD flat and a 34" WQHD 1800R curved, from their classes. */
 export const DEFAULT_MONITORS: Omit<Monitor, 'id'>[] = [
-  seedFromClass('31.5-2560x1440', 'QHD 31.5"', 0),
-  seedFromClass('34-3440x1440-1800r', 'WQHD 34"', 1),
+  seedFromClass('31.5-2560x1440', 0),
+  seedFromClass('34-3440x1440-1800r', 1),
 ]
 
 /** Maps a monitor's color slot to one of the eight categorical palette tokens. */

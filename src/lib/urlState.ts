@@ -16,9 +16,10 @@
 //   That's all — ordering, default-omission and round-tripping are automatic.
 //
 // Keys are emitted sorted alphabetically, so a given state always produces a
-// byte-identical URL (stable for diffing/caching/sharing). Names inside the
-// monitor list are percent-encoded; all structural delimiters (`& = ; :`) are
-// characters that encodeURIComponent escapes, so they can't collide with names.
+// byte-identical URL (stable for diffing/caching/sharing). Custom-monitor names
+// are percent-encoded with spaces rendered as `+`; every structural delimiter
+// (`& = ; :`) is a character encodeURIComponent escapes, so names can't collide.
+// Theme is intentionally NOT serialized — it's the viewer's own preference.
 import { CHECK_SCREEN_IDS, DEFAULT_MONITORS, DEFAULT_PREFERENCES } from '../constants'
 import { MONITOR_MODELS, classDefaultName, getClass } from '../data'
 import { uid } from './storage'
@@ -56,6 +57,15 @@ interface Setting<T> {
 //   custom  → `<w>x<h>_<diag>[_<curve>]:<percent-encoded name>`
 // Color slots are re-derived from position, so they aren't serialized.
 
+// Percent-encode a custom monitor name, but render spaces as the friendlier `+`
+// (a literal `+` in a name is escaped to %2B by encodeURIComponent, so this round-trips).
+function encodeName(name: string): string {
+  return encodeURIComponent(name).replace(/%20/g, '+')
+}
+function decodeName(raw: string): string {
+  return decodeURIComponent(raw.replace(/\+/g, '%20'))
+}
+
 function encodeMonitor(m: Monitor): string {
   const vis = m.visible ? '' : '-'
   const model = m.modelId ? MONITOR_MODELS.find((x) => x.id === m.modelId) : undefined
@@ -63,7 +73,7 @@ function encodeMonitor(m: Monitor): string {
   const cls = m.classId ? getClass(m.classId) : undefined
   if (cls && classDefaultName(cls) === m.name) return `${vis}=${cls.id}`
   const curve = m.curveRadius ? `_${m.curveRadius}` : ''
-  return `${vis}${m.resWidth}x${m.resHeight}_${m.diagonal}${curve}:${encodeURIComponent(m.name)}`
+  return `${vis}${m.resWidth}x${m.resHeight}_${m.diagonal}${curve}:${encodeName(m.name)}`
 }
 
 function decodeMonitor(token: string, index: number): Monitor | null {
@@ -91,7 +101,7 @@ function decodeMonitor(token: string, index: number): Monitor | null {
   // custom: geometry before the first ':', percent-encoded name after it.
   const colon = t.indexOf(':')
   const geom = colon === -1 ? t : t.slice(0, colon)
-  const name = colon === -1 ? '' : decodeURIComponent(t.slice(colon + 1))
+  const name = colon === -1 ? '' : decodeName(t.slice(colon + 1))
   const [wh, diagStr, curveStr] = geom.split('_')
   const [w, h] = (wh ?? '').split('x').map(Number)
   const diagonal = Number(diagStr)
@@ -189,14 +199,6 @@ const SETTINGS: Setting<any>[] = [
       encode: (v) => (v === 'check' ? 'k' : 'g'),
       decode: (raw) => (raw === 'k' ? 'check' : raw === 'g' ? 'geometry' : undefined),
     } as Setting<Tool>,
-    {
-      key: 'th',
-      get: (s) => s.themeChoice,
-      set: (d, v) => (d.themeChoice = v),
-      isDefault: (v) => v == null,
-      encode: (v) => (v === 'dark' ? 'd' : 'l'),
-      decode: (raw) => (raw === 'd' ? 'dark' : raw === 'l' ? 'light' : undefined),
-    } as Setting<Theme | null>,
     {
       key: 'tv',
       get: (s) => s.topViewAlign,
