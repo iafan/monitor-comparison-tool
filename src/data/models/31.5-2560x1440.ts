@@ -16,4 +16,12 @@ export const models: MonitorModel[] = [
     classId: '31.5-2560x1440',
     panelType: 'VA',
   },
+  {
+    id: 'viewsonic-vx3276-2k-mhd',
+    brand: 'ViewSonic',
+    name: 'ViewSonic VX3276-2K-MHD',
+    classId: '31.5-2560x1440',
+    panelType: 'IPS',
+    releaseYear: 2018,
+  },
 ]

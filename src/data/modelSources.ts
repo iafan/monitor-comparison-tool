@@ -52,6 +52,41 @@ export const MODEL_SOURCES: Record<string, SourceLink[]> = {
       url: 'https://www.microcenter.com/product/709705/lg-ultragear-g6-32g620b-bausq-315-2k-qhd-(2560-x-1440)-200hz-gaming-monitor',
     },
   ],
+  'viewsonic-vx3276-2k-mhd': [
+    {
+      name: 'ViewSonic VX3276-2K-mhd — ViewSonic (US)',
+      url: 'https://www.viewsonic.com/us/vx3276-2k-mhd-32-1440p-thin-bezel-ips-monitor-with-hdmi-dp-and-mini-dp.html',
+    },
+    { name: 'ViewSonic VX3276-2K-mhd — ViewSonic (global)', url: 'https://www.viewsonic.com/global/products/lcd/VX3276-2K-mhd' },
+    { name: 'ViewSonic VX3276-2K-mhd — displayspecifications', url: 'https://www.displayspecifications.com/en/model/c835107f' },
+    {
+      name: 'ViewSonic VX3276-2K-MHD — Amazon',
+      url: 'https://www.amazon.com/ViewSonic-VX3276-2K-MHD-Frameless-Widescreen-DisplayPort/dp/B0787XMLZQ',
+    },
+    {
+      name: 'ViewSonic VX3276-2K-MHD — B&H',
+      url: 'https://www.bhphotovideo.com/c/product/1435955-REG/viewsonic_vx3276_2k_mhd_32_ips_qhd_ultra_slim.html',
+    },
+  ],
+  'lg-34gx900a-b': [
+    { name: 'LG 34GX900A-B — LG (US)', url: 'https://www.lg.com/us/monitors/lg-34gx900a-b-gaming-monitor' },
+    {
+      name: 'LG UltraGear 34GX900A (34" OLED, 800R) — TFTCentral',
+      url: 'https://tftcentral.co.uk/news/lg-ultragear-34gx900a-launched-with-a-34-ultrawide-oled-panel-and-240hz-refresh-rate',
+    },
+    {
+      name: 'LG 34GX900A-B — Amazon',
+      url: 'https://www.amazon.com/LG-34GX900A-B-Ultragear-DisplayHDR-DisplayPort/dp/B0FDC2JBYG',
+    },
+    {
+      name: 'UltraGear OLED 34GX900A — Notebookcheck',
+      url: 'https://www.notebookcheck.net/UltraGear-OLED-34GX900A-LG-refreshes-34-inch-OLED-gaming-monitor-with-new-release.1083170.0.html',
+    },
+    {
+      name: 'LG UltraGear GX9 34GX900A — Guru3D',
+      url: 'https://www.guru3d.com/story/lg-ultragear-gx9-oled-curved-gaming-monitor-34gx900a/',
+    },
+  ],
   'lg-27gl83a-b': [
     { name: 'LG 27GL83A-B — LG (US)', url: 'https://www.lg.com/us/monitors/lg-27gl83a-b-gaming-monitor' },
     { name: 'LG 27GL83A-B — displayspecifications', url: 'https://www.displayspecifications.com/en/model/3d1d1b57' },
