@@ -26,6 +26,11 @@ export function sourcesFor(modelId: string): SourceLink[] {
   return MODEL_SOURCES[modelId] ?? []
 }
 
+/** The catalogued models that belong to a class id. */
+export function modelsInClass(classId: string): MonitorModel[] {
+  return MONITOR_MODELS.filter((m) => m.classId === classId)
+}
+
 /** Convenience for building a monitor's geometry fields from a class. */
 export function classGeometry(id: string): Pick<
   MonitorClass,

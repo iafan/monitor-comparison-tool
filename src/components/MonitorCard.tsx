@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { seriesColor } from '../constants'
+import { makeClassId, modelsInClass } from '../data'
 import { physical } from '../lib/geometry'
 import { UNIT_LABELS, formatLength } from '../lib/units'
 import type { Monitor, Unit } from '../types'
@@ -13,6 +15,11 @@ interface Props {
 
 export function MonitorCard({ monitor, unit, onToggle, onEdit, onDelete }: Props) {
   const p = physical(monitor)
+  const [showMatches, setShowMatches] = useState(false)
+  // Map to a class — its own if created from one, otherwise derived from geometry —
+  // then find the catalogued models that share that class.
+  const classId = monitor.classId ?? makeClassId(monitor)
+  const matches = modelsInClass(classId)
 
   return (
     <div
@@ -39,6 +46,27 @@ export function MonitorCard({ monitor, unit, onToggle, onEdit, onDelete }: Props
           {UNIT_LABELS[unit]} · {Math.round(p.ppi)} PPI ·{' '}
           {monitor.curveRadius ? `${monitor.curveRadius}R` : 'Flat'}
         </div>
+        {matches.length === 0 ? (
+          <div className="text-xs text-[var(--text-muted)]">No matching monitors in the database</div>
+        ) : (
+          <div className="text-xs">
+            <button
+              type="button"
+              onClick={() => setShowMatches((v) => !v)}
+              aria-expanded={showMatches}
+              className="cursor-pointer text-[var(--text-secondary)] underline"
+            >
+              {matches.length} matching monitor{matches.length === 1 ? '' : 's'} in the database
+            </button>
+            {showMatches && (
+              <ol className="mt-1 list-decimal pl-5 text-[var(--text-muted)]">
+                {matches.map((m) => (
+                  <li key={m.id}>{m.name}</li>
+                ))}
+              </ol>
+            )}
+          </div>
+        )}
       </div>
       <div className="flex flex-none gap-1.5">
         <button
