@@ -329,7 +329,7 @@ export function MonitorFormModal({ editing, onSave, onClose }: Props) {
           )}
 
           {source === 'class' && (
-            <div className={labelClass}>
+            <div className={`${labelClass} min-h-0 flex-1`}>
               <span>Pick a class</span>
               <input
                 type="text"
@@ -338,7 +338,7 @@ export function MonitorFormModal({ editing, onSave, onClose }: Props) {
                 placeholder="Search by size, resolution or curvature…"
                 className={fieldClass}
               />
-              <ul className="mt-1 max-h-56 overflow-y-auto rounded-lg border border-[var(--border)]">
+              <ul className="mt-1 min-h-0 flex-1 overflow-y-auto rounded-lg border border-[var(--border)]">
                 {filteredClasses.length === 0 && (
                   <li className="px-3 py-2.5 text-sm text-[var(--text-muted)]">No matching classes</li>
                 )}
@@ -364,7 +364,7 @@ export function MonitorFormModal({ editing, onSave, onClose }: Props) {
           )}
 
           {source === 'model' && (
-            <div className={labelClass}>
+            <div className={`${labelClass} min-h-0 flex-1`}>
               <span>Pick a model</span>
               <input
                 type="text"
@@ -373,7 +373,7 @@ export function MonitorFormModal({ editing, onSave, onClose }: Props) {
                 placeholder="Search by brand, model or panel…"
                 className={fieldClass}
               />
-              <ul className="mt-1 max-h-56 overflow-y-auto rounded-lg border border-[var(--border)]">
+              <ul className="mt-1 min-h-0 flex-1 overflow-y-auto rounded-lg border border-[var(--border)]">
                 {filteredModels.length === 0 && (
                   <li className="px-3 py-2.5 text-sm text-[var(--text-muted)]">No matching models</li>
                 )}
