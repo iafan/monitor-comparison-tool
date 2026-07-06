@@ -52,6 +52,38 @@ export const MODEL_SOURCES: Record<string, SourceLink[]> = {
       url: 'https://www.microcenter.com/product/709705/lg-ultragear-g6-32g620b-bausq-315-2k-qhd-(2560-x-1440)-200hz-gaming-monitor',
     },
   ],
+  'lg-27gl83a-b': [
+    { name: 'LG 27GL83A-B — LG (US)', url: 'https://www.lg.com/us/monitors/lg-27gl83a-b-gaming-monitor' },
+    { name: 'LG 27GL83A-B — displayspecifications', url: 'https://www.displayspecifications.com/en/model/3d1d1b57' },
+    {
+      name: 'LG 27GL850-B / 27GL83A-B review — RTINGS',
+      url: 'https://www.rtings.com/monitor/reviews/lg/27gl850-b-27gl83a-b',
+    },
+    {
+      name: 'LG 27GL83A-B — Amazon',
+      url: 'https://www.amazon.com/LG-27GL83A-B-Ultragear-Compatible-Monitor/dp/B07YGZL8XF',
+    },
+    { name: 'LG 27GL83A-B — Newegg', url: 'https://www.newegg.com/lg-27gl83a-b-27-qhd-144-hz-ultragear-ips/p/N82E16824026281' },
+  ],
+  'samsung-s32d850t': [
+    {
+      name: 'Samsung SD850 S32D850T — Samsung (US)',
+      url: 'https://www.samsung.com/us/computing/monitors/wqhd/s32d850t-samsung-wqhd-32-led-monitor-ls32d85ktsr-za/',
+    },
+    { name: 'Samsung S32D850T — displayspecifications (32", AMVA)', url: 'https://www.displayspecifications.com/en/model/30fe6ba' },
+    {
+      name: 'Samsung S27D850T & S32D850T — PC Monitors',
+      url: 'https://pcmonitors.info/samsung/samsung-s27d850t-and-s32d850t/',
+    },
+    {
+      name: 'S27D850T (S-PLS) & S32D850T (A-MVA) — [H]ardForum',
+      url: 'https://hardforum.com/threads/samsung-s27d850t-1440p-s-pls-s32d850t-1440p-a-mva.1822366/',
+    },
+    {
+      name: 'Samsung S32D850T (31.5" viewable listing) — Newegg',
+      url: 'https://www.newegg.com/samsung-s32d850t-32-wqhd/p/N82E16824001971',
+    },
+  ],
   'aoc-q32g11zne': [
     { name: 'AOC Q32G11ZNE — Amazon', url: 'https://www.amazon.com/AOC-Q32G11ZNE-Frameless-Response-Guarantee/dp/B0DF9SKLL2' },
     { name: 'AOC Q32G11ZNE — displayspecifications', url: 'https://www.displayspecifications.com/en/model/7ab7393f' },

@@ -24,7 +24,9 @@ export function classLabel(c: MonitorClass): string {
  * per-class file under `models/` (named exactly `<id>.ts`) for its products.
  */
 export const MONITOR_CLASSES: MonitorClass[] = [
+  { id: '27-2560x1440', diagonal: 27, resWidth: 2560, resHeight: 1440, curveRadius: null },
   { id: '31.5-2560x1440', diagonal: 31.5, resWidth: 2560, resHeight: 1440, curveRadius: null },
+  { id: '32-2560x1440', diagonal: 32, resWidth: 2560, resHeight: 1440, curveRadius: null },
   { id: '34-3440x1440-1800r', diagonal: 34, resWidth: 3440, resHeight: 1440, curveRadius: 1800 },
   { id: '37.5-3840x1600-2300r', diagonal: 37.5, resWidth: 3840, resHeight: 1600, curveRadius: 2300 },
 ]

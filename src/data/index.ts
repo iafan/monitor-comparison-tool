@@ -4,13 +4,17 @@ import type { MonitorClass, MonitorModel, SourceLink } from './types'
 
 // One import per class file under models/. When you add a class, add its file
 // here too. (Kept explicit rather than glob-based so it type-checks under tsc.)
+import { models as models_27_2560x1440 } from './models/27-2560x1440'
 import { models as models_31_5_2560x1440 } from './models/31.5-2560x1440'
+import { models as models_32_2560x1440 } from './models/32-2560x1440'
 import { models as models_34_3440x1440_1800r } from './models/34-3440x1440-1800r'
 import { models as models_37_5_3840x1600_2300r } from './models/37.5-3840x1600-2300r'
 
 /** Every catalogued specific model, flattened across the per-class files. */
 export const MONITOR_MODELS: MonitorModel[] = [
+  ...models_27_2560x1440,
   ...models_31_5_2560x1440,
+  ...models_32_2560x1440,
   ...models_34_3440x1440_1800r,
   ...models_37_5_3840x1600_2300r,
 ]
