@@ -61,6 +61,11 @@ for (const m of MONITOR_MODELS) {
   if (!CLASS_BY_ID.has(m.classId)) {
     throw new Error(`Model "${m.id}" references unknown class "${m.classId}"`)
   }
+  // URL encoding tells models (letter-led) from classes (digit-led) by first char,
+  // so a model id must start with a letter.
+  if (!/^[a-z]/i.test(m.id)) {
+    throw new Error(`Model id "${m.id}" must start with a letter (URL serialization depends on it)`)
+  }
 }
 for (const id of Object.keys(MODEL_SOURCES)) {
   if (!MODEL_IDS.has(id)) {

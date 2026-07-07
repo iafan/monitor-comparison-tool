@@ -61,9 +61,13 @@ const inComparison = (s: AppState) => s.tool === 'comparison'
 
 // ── Monitor list codec ────────────────────────────────────────────────────────
 // Each monitor is one token; tokens are `;`-joined. A leading `-` marks hidden.
-//   model   → `!<modelId>`            (geometry + name derived from the catalogue)
-//   class   → `=<classId>`            (geometry + name derived from the catalogue)
-//   custom  → `<w>x<h>_<diag>[_<curve>]:<percent-encoded name>`
+// The type is inferred from the first character — no marker is needed for model
+// or class because their ids can't be confused:
+//   custom  → `@<w>x<h>_<diag>[_<curve>]:<percent-encoded name>`   (the `@` marks custom)
+//   class   → `<classId>`   digit-led, e.g. `34-3440x1440-1800r`  (geometry + default name)
+//   model   → `<modelId>`   letter-led, e.g. `dell-s3425dw`       (geometry + name from catalogue)
+// Class ids always start with a digit (the diagonal); model ids are asserted to
+// start with a letter in src/data, so digit-vs-letter reliably tells them apart.
 // Color slots are re-derived from position, so they aren't serialized.
 
 // Percent-encode a custom monitor name, but render spaces as the friendlier `+`
@@ -78,11 +82,11 @@ function decodeName(raw: string): string {
 function encodeMonitor(m: Monitor): string {
   const vis = m.visible ? '' : '-'
   const model = m.modelId ? MONITOR_MODELS.find((x) => x.id === m.modelId) : undefined
-  if (model && model.name === m.name) return `${vis}!${model.id}`
+  if (model && model.name === m.name) return `${vis}${model.id}` // letter-led ⇒ model
   const cls = m.classId ? getClass(m.classId) : undefined
-  if (cls && classDefaultName(cls) === m.name) return `${vis}=${cls.id}`
+  if (cls && classDefaultName(cls) === m.name) return `${vis}${cls.id}` // digit-led ⇒ class
   const curve = m.curveRadius ? `_${m.curveRadius}` : ''
-  return `${vis}${m.resWidth}x${m.resHeight}_${m.diagonal}${curve}:${encodeName(m.name)}`
+  return `${vis}@${m.resWidth}x${m.resHeight}_${m.diagonal}${curve}:${encodeName(m.name)}` // @ ⇒ custom
 }
 
 function decodeMonitor(token: string, index: number): Monitor | null {
@@ -94,30 +98,33 @@ function decodeMonitor(token: string, index: number): Monitor | null {
   }
   const base = { id: uid(), visible, colorSlot: index }
 
-  if (t.startsWith('!')) {
-    const model = MONITOR_MODELS.find((x) => x.id === t.slice(1))
-    const cls = model && getClass(model.classId)
-    if (!model || !cls) return null
-    const { resWidth, resHeight, diagonal, curveRadius } = cls
-    return { ...base, name: model.name, resWidth, resHeight, diagonal, curveRadius, classId: cls.id, modelId: model.id }
+  if (t.startsWith('@')) {
+    // custom: geometry before the first ':', percent-encoded name after it.
+    const body = t.slice(1)
+    const colon = body.indexOf(':')
+    const geom = colon === -1 ? body : body.slice(0, colon)
+    const name = colon === -1 ? '' : decodeName(body.slice(colon + 1))
+    const [wh, diagStr, curveStr] = geom.split('_')
+    const [w, h] = (wh ?? '').split('x').map(Number)
+    const diagonal = Number(diagStr)
+    const curveRadius = curveStr != null ? Number(curveStr) : null
+    if (![w, h, diagonal].every((n) => Number.isFinite(n) && n > 0)) return null
+    if (curveRadius != null && !Number.isFinite(curveRadius)) return null
+    return { ...base, name: name || 'Monitor', resWidth: w, resHeight: h, diagonal, curveRadius }
   }
-  if (t.startsWith('=')) {
-    const cls = getClass(t.slice(1))
+
+  // No prefix: digit-led ⇒ class id, letter-led ⇒ model id (see codec note above).
+  if (/^\d/.test(t)) {
+    const cls = getClass(t)
     if (!cls) return null
     const { resWidth, resHeight, diagonal, curveRadius } = cls
     return { ...base, name: classDefaultName(cls), resWidth, resHeight, diagonal, curveRadius, classId: cls.id }
   }
-  // custom: geometry before the first ':', percent-encoded name after it.
-  const colon = t.indexOf(':')
-  const geom = colon === -1 ? t : t.slice(0, colon)
-  const name = colon === -1 ? '' : decodeName(t.slice(colon + 1))
-  const [wh, diagStr, curveStr] = geom.split('_')
-  const [w, h] = (wh ?? '').split('x').map(Number)
-  const diagonal = Number(diagStr)
-  const curveRadius = curveStr != null ? Number(curveStr) : null
-  if (![w, h, diagonal].every((n) => Number.isFinite(n) && n > 0)) return null
-  if (curveRadius != null && !Number.isFinite(curveRadius)) return null
-  return { ...base, name: name || 'Monitor', resWidth: w, resHeight: h, diagonal, curveRadius }
+  const model = MONITOR_MODELS.find((x) => x.id === t)
+  const mcls = model && getClass(model.classId)
+  if (!model || !mcls) return null
+  const { resWidth, resHeight, diagonal, curveRadius } = mcls
+  return { ...base, name: model.name, resWidth, resHeight, diagonal, curveRadius, classId: mcls.id, modelId: model.id }
 }
 
 /** True when the list is exactly the seeded defaults (so `m` can be omitted). */
