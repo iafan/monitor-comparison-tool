@@ -29,6 +29,22 @@ export function physical(m: Monitor): Physical {
   return { widthIn, heightIn, ppi, pitchMm, ratio }
 }
 
+/**
+ * Stable display order: smallest physical panel area first, then alphabetically
+ * by name. Independent of the order monitors were added, so the table, the
+ * on-screen views, the card list, and the serialized URL all agree.
+ */
+export function sortMonitors(monitors: Monitor[]): Monitor[] {
+  return [...monitors].sort((a, b) => {
+    const pa = physical(a)
+    const pb = physical(b)
+    const areaA = pa.widthIn * pa.heightIn
+    const areaB = pb.widthIn * pb.heightIn
+    if (areaA !== areaB) return areaA - areaB
+    return a.name.localeCompare(b.name)
+  })
+}
+
 export function formatNumber(n: number, digits = 1): string {
   return n.toLocaleString(undefined, {
     minimumFractionDigits: digits,

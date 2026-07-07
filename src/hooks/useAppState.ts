@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Alignment, Monitor, MonitorInput, Preferences, Theme, Tool, TopViewAlign } from '../types'
+import { sortMonitors } from '../lib/geometry'
 import {
   loadAlignment,
   loadMonitors,
@@ -81,6 +82,12 @@ export function useAppState(): AppStore {
 
   const resolvedTheme: Theme = state.themeChoice ?? systemTheme()
 
+  // Monitors are always exposed and serialized in a stable order (physical area,
+  // then name) — independent of the order they were added. Everything downstream
+  // (table, on-screen views, card list, URL) reads this same sorted view.
+  const monitors = useMemo(() => sortMonitors(state.monitors), [state.monitors])
+  const encoded = useMemo(() => encodeState({ ...state, monitors }), [state, monitors])
+
   // Mirror the resolved theme onto <html> so the CSS palette tokens apply.
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', resolvedTheme)
@@ -89,34 +96,33 @@ export function useAppState(): AppStore {
   // Keep the URL in sync — replaceState (no history spam, no reload). Empty
   // fragment (all defaults) collapses to a clean URL.
   useEffect(() => {
-    const fragment = encodeState(state)
-    const url = fragment ? `#${fragment}` : window.location.pathname + window.location.search
+    const url = encoded ? `#${encoded}` : window.location.pathname + window.location.search
     window.history.replaceState(null, '', url)
-  }, [state])
+  }, [encoded])
 
   // Persist the view to localStorage only once the visitor owns it. (Theme is
   // handled separately in toggleTheme — it's always saved and never gated.)
   useEffect(() => {
     if (!persist.current) return
     saveTool(state.tool)
-    saveMonitors(state.monitors)
+    saveMonitors(monitors)
     saveAlignment(state.alignment)
     saveTopViewAlign(state.topViewAlign)
     savePreferences(state.preferences)
-  }, [state])
+  }, [state, monitors])
 
   // Re-hydrate when the user edits the URL by hand or navigates back/forward.
   useEffect(() => {
     const onHashChange = () => {
       const fragment = readFragment()
-      if (fragment === encodeState(state)) return // our own write
+      if (fragment === encoded) return // our own write
       // Re-hydrate from stored baseline + the new fragment; keep the viewer's theme.
       setState((s) => ({ ...applyDecoded(storedState(), decodeState(fragment)), themeChoice: s.themeChoice }))
       persist.current = false
     }
     window.addEventListener('hashchange', onHashChange)
     return () => window.removeEventListener('hashchange', onHashChange)
-  }, [state])
+  }, [encoded])
 
   // Content/settings edits funnel through here so persistence turns on.
   const mutate = useCallback((updater: (s: AppState) => AppState) => {
@@ -187,7 +193,7 @@ export function useAppState(): AppStore {
     setTool,
     theme: resolvedTheme,
     toggleTheme,
-    monitors: state.monitors,
+    monitors,
     addMonitor,
     updateMonitor,
     deleteMonitor,
