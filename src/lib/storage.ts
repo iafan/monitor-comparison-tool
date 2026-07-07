@@ -9,8 +9,9 @@ import {
   TOOL_KEY,
   TOPVIEW_ALIGN_KEY,
   TOPVIEW_ALIGNS,
+  VISIBLE_AREA_KEY,
 } from '../constants'
-import type { Alignment, Monitor, Preferences, Theme, Tool, TopViewAlign } from '../types'
+import type { Alignment, Monitor, Preferences, Theme, Tool, TopViewAlign, VisibleAreaFrame } from '../types'
 
 export function uid(): string {
   return crypto.randomUUID
@@ -88,4 +89,24 @@ export function loadTheme(): Theme | null {
 
 export function saveTheme(theme: Theme): void {
   localStorage.setItem(THEME_KEY, theme)
+}
+
+const FRAME_KEYS = ['topX', 'topY', 'botX', 'botY', 'radius'] as const
+
+/** The saved visible-area frame, or null (full-screen default — nothing stored). */
+export function loadVisibleFrame(): VisibleAreaFrame | null {
+  try {
+    const raw = localStorage.getItem(VISIBLE_AREA_KEY)
+    if (!raw) return null
+    const p = JSON.parse(raw) as Record<string, unknown>
+    if (!FRAME_KEYS.every((k) => typeof p[k] === 'number' && Number.isFinite(p[k]))) return null
+    return { topX: p.topX, topY: p.topY, botX: p.botX, botY: p.botY, radius: p.radius } as VisibleAreaFrame
+  } catch {
+    return null
+  }
+}
+
+export function saveVisibleFrame(frame: VisibleAreaFrame | null): void {
+  if (frame) localStorage.setItem(VISIBLE_AREA_KEY, JSON.stringify(frame))
+  else localStorage.removeItem(VISIBLE_AREA_KEY)
 }

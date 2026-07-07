@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { Alignment, Monitor, MonitorInput, Preferences, Theme, Tool, TopViewAlign } from '../types'
+import type {
+  Alignment,
+  Monitor,
+  MonitorInput,
+  Preferences,
+  Theme,
+  Tool,
+  TopViewAlign,
+  VisibleAreaFrame,
+} from '../types'
 import { sortMonitors } from '../lib/geometry'
 import {
   loadAlignment,
@@ -8,12 +17,14 @@ import {
   loadTheme,
   loadTool,
   loadTopViewAlign,
+  loadVisibleFrame,
   saveAlignment,
   saveMonitors,
   savePreferences,
   saveTheme,
   saveTool,
   saveTopViewAlign,
+  saveVisibleFrame,
   uid,
 } from '../lib/storage'
 import { applyDecoded, decodeState, encodeState, type AppState } from '../lib/urlState'
@@ -36,6 +47,7 @@ function storedState(): AppState {
     topViewAlign: loadTopViewAlign(),
     preferences: loadPreferences(),
     checkScreen: null,
+    visibleFrame: loadVisibleFrame(),
   }
 }
 
@@ -72,6 +84,9 @@ export interface AppStore {
   updatePreferences: (patch: Partial<Preferences>) => void
   checkScreen: string | null
   setCheckScreen: (screen: string | null) => void
+  /** Monitor Geometry visible-area frame; null = full-screen default. */
+  visibleFrame: VisibleAreaFrame | null
+  setVisibleFrame: (frame: VisibleAreaFrame | null) => void
 }
 
 export function useAppState(): AppStore {
@@ -109,6 +124,7 @@ export function useAppState(): AppStore {
     saveAlignment(state.alignment)
     saveTopViewAlign(state.topViewAlign)
     savePreferences(state.preferences)
+    saveVisibleFrame(state.visibleFrame)
   }, [state, monitors])
 
   // Re-hydrate when the user edits the URL by hand or navigates back/forward.
@@ -162,6 +178,11 @@ export function useAppState(): AppStore {
     [navigate],
   )
 
+  const setVisibleFrame = useCallback(
+    (visibleFrame: VisibleAreaFrame | null) => mutate((s) => ({ ...s, visibleFrame })),
+    [mutate],
+  )
+
   const addMonitor = useCallback(
     (input: MonitorInput) =>
       mutate((s) => ({ ...s, monitors: [...s.monitors, { ...input, id: uid(), visible: true }] })),
@@ -203,5 +224,7 @@ export function useAppState(): AppStore {
     updatePreferences,
     checkScreen: state.checkScreen,
     setCheckScreen,
+    visibleFrame: state.visibleFrame,
+    setVisibleFrame,
   }
 }

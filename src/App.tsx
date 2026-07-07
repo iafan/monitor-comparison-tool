@@ -27,7 +27,9 @@ export function App() {
           />
         )}
         {app.tool === 'check' && <MonitorCheck screen={app.checkScreen} setScreen={app.setCheckScreen} />}
-        {app.tool === 'geometry' && <MonitorGeometry />}
+        {app.tool === 'geometry' && (
+          <MonitorGeometry visibleFrame={app.visibleFrame} setVisibleFrame={app.setVisibleFrame} />
+        )}
       </main>
     </>
   )

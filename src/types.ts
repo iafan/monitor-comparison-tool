@@ -19,6 +19,19 @@ export interface Monitor {
   modelId?: string
 }
 
+/**
+ * The Monitor Geometry "visible screen area" frame, in CSS pixels: two opposite
+ * corners (inclusive) plus a corner radius. null means the full-screen default
+ * (top-left 0,0 to bottom-right width-1,height-1, no rounding).
+ */
+export interface VisibleAreaFrame {
+  topX: number
+  topY: number
+  botX: number
+  botY: number
+  radius: number
+}
+
 /** Display unit for physical lengths. Diagonal, PPI and pixel pitch are exempt. */
 export type Unit = 'in' | 'cm' | 'mm'
 

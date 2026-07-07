@@ -23,7 +23,7 @@
 import { CHECK_SCREEN_IDS, DEFAULT_MONITORS } from '../constants'
 import { MONITOR_MODELS, classDefaultName, getClass } from '../data'
 import { uid } from './storage'
-import type { Alignment, Monitor, Preferences, Theme, Tool, TopViewAlign } from '../types'
+import type { Alignment, Monitor, Preferences, Theme, Tool, TopViewAlign, VisibleAreaFrame } from '../types'
 
 export interface AppState {
   tool: Tool
@@ -35,6 +35,8 @@ export interface AppState {
   preferences: Preferences
   /** Selected Monitor Check screen id, or null. Fullscreen itself is never serialized. */
   checkScreen: string | null
+  /** Monitor Geometry visible-area frame, or null for the full-screen default. */
+  visibleFrame: VisibleAreaFrame | null
 }
 
 /** A decoded (partial) state; preferences arrive field-by-field from several keys. */
@@ -188,6 +190,20 @@ const SETTINGS: Setting<any>[] = [
       relevant: inComparison,
     } as Setting<Preferences>,
     {
+      key: 'f',
+      get: (s) => s.visibleFrame,
+      set: (d, v) => (d.visibleFrame = v),
+      isDefault: (v) => v == null, // null = full-screen default → omitted
+      encode: (v) => `${v.topX}_${v.topY}_${v.botX}_${v.botY}_${v.radius}`,
+      decode: (raw) => {
+        const [topX, topY, botX, botY, radius] = raw.split('_').map(Number)
+        const vals = [topX, topY, botX, botY, radius]
+        if (!vals.every((n) => Number.isFinite(n) && n >= 0)) return undefined
+        return { topX, topY, botX, botY, radius } as VisibleAreaFrame
+      },
+      relevant: (s) => s.tool === 'geometry',
+    } as Setting<VisibleAreaFrame | null>,
+    {
       key: 'm',
       get: (s) => s.monitors,
       set: (d, v) => (d.monitors = v),
@@ -274,6 +290,7 @@ export function applyDecoded(base: AppState, d: Decoded): AppState {
     alignment: d.alignment ?? base.alignment,
     topViewAlign: d.topViewAlign ?? base.topViewAlign,
     checkScreen: d.checkScreen ?? base.checkScreen,
+    visibleFrame: d.visibleFrame ?? base.visibleFrame,
     preferences: { ...base.preferences, ...d.preferences },
   }
 }

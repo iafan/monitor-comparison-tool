@@ -7,6 +7,7 @@ export const TOPVIEW_ALIGN_KEY = 'monitor-comparison:topview-align:v1'
 export const PREFS_KEY = 'monitor-comparison:preferences:v1'
 export const TOOL_KEY = 'monitor-comparison:tool:v1'
 export const THEME_KEY = 'monitor-comparison:theme:v1'
+export const VISIBLE_AREA_KEY = 'monitor-comparison:visible-area:v1'
 export const COLOR_SLOTS = 8
 
 /** Valid Monitor Check screen ids (mirrors PATTERNS in MonitorCheck); used to validate the URL `scr` value. */
