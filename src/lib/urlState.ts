@@ -194,7 +194,7 @@ const SETTINGS: Setting<any>[] = [
       get: (s) => s.visibleFrame,
       set: (d, v) => (d.visibleFrame = v),
       isDefault: (v) => v == null, // null = full-screen default → omitted
-      encode: (v) => `${v.topX}_${v.topY}_${v.botX}_${v.botY}_${v.radius}`,
+      encode: (v) => (v ? `${v.topX}_${v.topY}_${v.botX}_${v.botY}_${v.radius}` : ''),
       decode: (raw) => {
         const [topX, topY, botX, botY, radius] = raw.split('_').map(Number)
         const vals = [topX, topY, botX, botY, radius]
