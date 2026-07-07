@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { seriesColor } from '../constants'
-import { makeClassId, modelsInClass } from '../data'
+import { classLabel, getClass, makeClassId, modelsInClass } from '../data'
 import { physical } from '../lib/geometry'
 import { UNIT_LABELS, formatLength } from '../lib/units'
 import type { Monitor, Unit } from '../types'
@@ -16,10 +16,18 @@ interface Props {
 export function MonitorCard({ monitor, unit, onToggle, onEdit, onDelete }: Props) {
   const p = physical(monitor)
   const [showMatches, setShowMatches] = useState(false)
-  // Map to a class — its own if created from one, otherwise derived from geometry —
-  // then find the catalogued models that share that class.
+  // Map to a class — its own if created from one, otherwise derived from geometry.
+  // Matches are the generic class plus the catalogued models sharing it, minus this
+  // monitor's own exact model (so a specific model doesn't list itself). Sorted
+  // alphabetically by label.
   const classId = monitor.classId ?? makeClassId(monitor)
-  const matches = modelsInClass(classId)
+  const cls = getClass(classId)
+  const matches = [
+    ...(cls ? [{ key: `class:${cls.id}`, label: classLabel(cls) }] : []),
+    ...modelsInClass(classId)
+      .filter((m) => m.id !== monitor.modelId)
+      .map((m) => ({ key: m.id, label: m.name })),
+  ].sort((a, b) => a.label.localeCompare(b.label))
 
   return (
     <div
@@ -61,7 +69,7 @@ export function MonitorCard({ monitor, unit, onToggle, onEdit, onDelete }: Props
             {showMatches && (
               <ol className="mt-1 list-decimal pl-5 text-[var(--text-muted)]">
                 {matches.map((m) => (
-                  <li key={m.id}>{m.name}</li>
+                  <li key={m.key}>{m.label}</li>
                 ))}
               </ol>
             )}
