@@ -13,10 +13,9 @@ import {
   saveTheme,
   saveTool,
   saveTopViewAlign,
-  seedDefaults,
   uid,
 } from '../lib/storage'
-import { applyDecoded, decodeState, defaultState, encodeState, type AppState } from '../lib/urlState'
+import { applyDecoded, decodeState, encodeState, type AppState } from '../lib/urlState'
 
 function systemTheme(): Theme {
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
@@ -26,31 +25,31 @@ function readFragment(): string {
   return window.location.hash.replace(/^#/, '')
 }
 
+/** The viewer's own persisted state — the baseline a URL's view-overrides apply onto. */
+function storedState(): AppState {
+  return {
+    tool: loadTool(),
+    themeChoice: loadTheme(),
+    monitors: loadMonitors(),
+    alignment: loadAlignment(),
+    topViewAlign: loadTopViewAlign(),
+    preferences: loadPreferences(),
+    checkScreen: null,
+  }
+}
+
 /**
- * Builds the initial state. A non-empty URL fragment fully determines the view
- * (so shared links are reproducible); otherwise we hydrate from localStorage.
- * `fromUrl` drives ephemeral behaviour: URL-loaded state isn't persisted until
- * the visitor makes their first change.
+ * Builds the initial state. The baseline is always the viewer's stored state; a
+ * URL fragment then overrides only the fields relevant to that shared *view*
+ * (so a `#t=g` permalink keeps your own monitors intact when you switch back).
+ * `fromUrl` drives ephemeral behaviour: an opened link isn't persisted until the
+ * viewer edits the content.
  */
 function initialState(): { state: AppState; fromUrl: boolean } {
   const fragment = readFragment()
-  if (fragment) {
-    // Theme is a local preference, never carried in a shared link — take it from storage.
-    const state = { ...applyDecoded(defaultState(seedDefaults()), decodeState(fragment)), themeChoice: loadTheme() }
-    return { state, fromUrl: true }
-  }
-  return {
-    state: {
-      tool: loadTool(),
-      themeChoice: loadTheme(),
-      monitors: loadMonitors(),
-      alignment: loadAlignment(),
-      topViewAlign: loadTopViewAlign(),
-      preferences: loadPreferences(),
-      checkScreen: null,
-    },
-    fromUrl: false,
-  }
+  const base = storedState()
+  if (fragment) return { state: applyDecoded(base, decodeState(fragment)), fromUrl: true }
+  return { state: base, fromUrl: false }
 }
 
 export interface AppStore {
@@ -111,21 +110,25 @@ export function useAppState(): AppStore {
     const onHashChange = () => {
       const fragment = readFragment()
       if (fragment === encodeState(state)) return // our own write
-      // Keep the viewer's own theme; the URL never dictates it.
-      setState((s) => ({ ...applyDecoded(defaultState(seedDefaults()), decodeState(fragment)), themeChoice: s.themeChoice }))
+      // Re-hydrate from stored baseline + the new fragment; keep the viewer's theme.
+      setState((s) => ({ ...applyDecoded(storedState(), decodeState(fragment)), themeChoice: s.themeChoice }))
       persist.current = false
     }
     window.addEventListener('hashchange', onHashChange)
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [state])
 
-  // All mutations funnel through here so persistence turns on exactly once.
+  // Content/settings edits funnel through here so persistence turns on.
   const mutate = useCallback((updater: (s: AppState) => AppState) => {
     persist.current = true
     setState(updater)
   }, [])
 
-  const setTool = useCallback((tool: Tool) => mutate((s) => ({ ...s, tool })), [mutate])
+  // Navigation (tool / check screen) is not a content edit — it must NOT flip the
+  // ephemeral flag, so merely browsing an opened link never adopts its monitors.
+  const navigate = useCallback((updater: (s: AppState) => AppState) => setState(updater), [])
+
+  const setTool = useCallback((tool: Tool) => navigate((s) => ({ ...s, tool })), [navigate])
 
   // Theme is the viewer's own preference: always persisted, never in the URL, and
   // it doesn't flip the ephemeral flag (flipping dark mode on a shared link must
@@ -149,8 +152,8 @@ export function useAppState(): AppStore {
   )
 
   const setCheckScreen = useCallback(
-    (checkScreen: string | null) => mutate((s) => ({ ...s, checkScreen })),
-    [mutate],
+    (checkScreen: string | null) => navigate((s) => ({ ...s, checkScreen })),
+    [navigate],
   )
 
   const addMonitor = useCallback(

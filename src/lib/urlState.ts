@@ -20,7 +20,7 @@
 // are percent-encoded with spaces rendered as `+`; every structural delimiter
 // (`& = ; :`) is a character encodeURIComponent escapes, so names can't collide.
 // Theme is intentionally NOT serialized — it's the viewer's own preference.
-import { CHECK_SCREEN_IDS, DEFAULT_MONITORS, DEFAULT_PREFERENCES } from '../constants'
+import { CHECK_SCREEN_IDS, DEFAULT_MONITORS } from '../constants'
 import { MONITOR_MODELS, classDefaultName, getClass } from '../data'
 import { uid } from './storage'
 import type { Alignment, Monitor, Preferences, Theme, Tool, TopViewAlign } from '../types'
@@ -48,7 +48,16 @@ interface Setting<T> {
   encode: (v: T) => string
   /** Returns undefined for an invalid token (which is then ignored). */
   decode: (raw: string) => T | undefined
+  /**
+   * Whether this setting is part of the *current view* and should appear in the
+   * URL. The URL is a permalink to the view, not a dump of all state — e.g.
+   * comparison settings are irrelevant while the Geometry/Check tool is active,
+   * so they're omitted there. Absent ⇒ always relevant.
+   */
+  relevant?: (s: AppState) => boolean
 }
+
+const inComparison = (s: AppState) => s.tool === 'comparison'
 
 // ── Monitor list codec ────────────────────────────────────────────────────────
 // Each monitor is one token; tokens are `;`-joined. A leading `-` marks hidden.
@@ -157,9 +166,10 @@ const SETTINGS: Setting<any>[] = [
       isDefault: (v) => v === 'center',
       encode: (v) => ALIGN_CODE[v],
       decode: (raw) => ALIGN_BY_CODE[raw],
+      relevant: inComparison,
     } as Setting<Alignment>,
     {
-      key: 'dk',
+      key: 'd',
       get: (s) => s.preferences,
       set: (d, v) => (d.preferences = { ...d.preferences, ...v }),
       isDefault: (v) => !v.deskEnabled,
@@ -169,6 +179,7 @@ const SETTINGS: Setting<any>[] = [
         if (![deskWidth, deskDepth, deskX, deskY].every(Number.isFinite)) return undefined
         return { deskEnabled: true, deskWidth, deskDepth, deskX, deskY } as Partial<Preferences> as Preferences
       },
+      relevant: inComparison,
     } as Setting<Preferences>,
     {
       key: 'm',
@@ -182,14 +193,16 @@ const SETTINGS: Setting<any>[] = [
           .filter(Boolean)
           .map(decodeMonitor)
           .filter((m): m is Monitor => m !== null),
+      relevant: inComparison,
     } as Setting<Monitor[]>,
     {
-      key: 'scr',
+      key: 's',
       get: (s) => s.checkScreen,
       set: (d, v) => (d.checkScreen = v),
       isDefault: (v) => v == null,
       encode: (v) => v as string,
       decode: (raw) => ((CHECK_SCREEN_IDS as readonly string[]).includes(raw) ? raw : undefined),
+      relevant: (s) => s.tool === 'check',
     } as Setting<string | null>,
     {
       key: 't',
@@ -206,6 +219,7 @@ const SETTINGS: Setting<any>[] = [
       isDefault: (v) => v === 'front',
       encode: (v) => (v === 'back' ? 'b' : 'c'),
       decode: (raw) => (raw === 'b' ? 'back' : raw === 'c' ? 'center' : undefined),
+      relevant: inComparison,
     } as Setting<TopViewAlign>,
     {
       key: 'u',
@@ -214,12 +228,17 @@ const SETTINGS: Setting<any>[] = [
       isDefault: (v) => v === 'in',
       encode: (v) => v,
       decode: (raw) => (raw === 'cm' || raw === 'mm' ? raw : undefined),
+      relevant: inComparison,
     } as Setting<Preferences['unit']>,
 ]
 
-/** Serialize state → compact fragment (no leading `#`). Keys sorted alphabetically. */
+/**
+ * Serialize state → compact fragment (no leading `#`). Only settings that are
+ * relevant to the current view AND non-default are emitted; keys sorted
+ * alphabetically so a given view always produces a byte-identical URL.
+ */
 export function encodeState(state: AppState): string {
-  return SETTINGS.filter((f) => !f.isDefault(f.get(state)))
+  return SETTINGS.filter((f) => (!f.relevant || f.relevant(state)) && !f.isDefault(f.get(state)))
     .map((f) => `${f.key}=${f.encode(f.get(state))}`)
     .sort()
     .join('&')
@@ -238,19 +257,6 @@ export function decodeState(fragment: string): Decoded {
     if (value !== undefined) setting.set(draft, value)
   }
   return draft
-}
-
-/** The canonical default state — the baseline a URL's overrides are applied onto. */
-export function defaultState(monitors: Monitor[]): AppState {
-  return {
-    tool: 'comparison',
-    themeChoice: null,
-    monitors,
-    alignment: 'center',
-    topViewAlign: 'front',
-    preferences: DEFAULT_PREFERENCES,
-    checkScreen: null,
-  }
 }
 
 /** Merge a decoded fragment onto a base state. */
