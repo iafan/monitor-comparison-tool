@@ -58,7 +58,7 @@ export function MonitorComparison({
   }
 
   const handleDelete = (monitor: Monitor) => {
-    if (window.confirm(`Delete "${monitor.name}"?`)) {
+    if (window.confirm(`Remove "${monitor.name}" from the list?`)) {
       deleteMonitor(monitor.id)
     }
   }
