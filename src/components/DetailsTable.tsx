@@ -22,9 +22,10 @@ const HEADERS = [
 ]
 
 export function DetailsTable({ monitors, unit }: Props) {
+  // Only the enabled (visible) monitors — this table replaces the legend at the top.
+  const visible = monitors.filter((m) => m.visible)
   return (
-    <section className="mb-6">
-      <h2 className="mb-2.5 text-base font-semibold text-[var(--text-secondary)]">Details</h2>
+    <section className="mb-3">
       <div className="overflow-x-auto rounded-[10px] border border-[var(--border)]">
         <table className="w-full border-collapse text-left text-sm whitespace-nowrap">
           <thead>
@@ -40,14 +41,14 @@ export function DetailsTable({ monitors, unit }: Props) {
             </tr>
           </thead>
           <tbody>
-            {monitors.length === 0 ? (
+            {visible.length === 0 ? (
               <tr>
                 <td colSpan={HEADERS.length} className="p-4 text-center text-[var(--text-muted)]">
-                  No monitors added yet.
+                  No monitors to display.
                 </td>
               </tr>
             ) : (
-              monitors.map((m) => {
+              visible.map((m) => {
                 const p = physical(m)
                 return (
                   <tr key={m.id} className="[&>td]:border-b [&>td]:border-[var(--gridline)] last:[&>td]:border-b-0">

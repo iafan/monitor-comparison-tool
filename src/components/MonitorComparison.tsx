@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Header } from './Header'
-import { Legend } from './Legend'
 import { ComparisonStage } from './ComparisonStage'
 import { TopView } from './TopView'
 import { MonitorList } from './MonitorList'
@@ -64,7 +63,7 @@ export function MonitorComparison({
   return (
     <>
       <Header onAdd={() => setModal({ editing: null })} />
-      <Legend monitors={monitors} />
+      <DetailsTable monitors={monitors} unit={unit} />
       <ComparisonStage monitors={monitors} alignment={alignment} />
       <TopView
         monitors={monitors}
@@ -84,7 +83,6 @@ export function MonitorComparison({
         onEdit={(monitor) => setModal({ editing: monitor })}
         onDelete={handleDelete}
       />
-      <DetailsTable monitors={monitors} unit={unit} />
       <Preferences preferences={preferences} onChange={updatePreferences} />
       <AlignmentPicker
         value={alignment}
