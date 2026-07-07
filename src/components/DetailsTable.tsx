@@ -9,7 +9,6 @@ interface Props {
 }
 
 const HEADERS = [
-  '',
   'Name',
   'Resolution',
   'Ratio',
@@ -53,12 +52,14 @@ export function DetailsTable({ monitors, unit, colors }: Props) {
                 return (
                   <tr key={m.id} className="[&>td]:border-b [&>td]:border-[var(--gridline)] last:[&>td]:border-b-0">
                     <td className="px-2.5 py-2">
-                      <span
-                        className="inline-block size-3 rounded-[3px]"
-                        style={{ background: colors[m.id] }}
-                      />
+                      <span className="inline-flex items-center gap-2">
+                        <span
+                          className="inline-block size-3 flex-none rounded-[3px]"
+                          style={{ background: colors[m.id] }}
+                        />
+                        {m.name}
+                      </span>
                     </td>
-                    <td className="px-2.5 py-2">{m.name}</td>
                     <td className="px-2.5 py-2 tabular-nums">
                       {m.resWidth}×{m.resHeight}
                     </td>
