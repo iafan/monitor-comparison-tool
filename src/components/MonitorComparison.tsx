@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { assignColors } from '../constants'
 import { Intro } from './Intro'
 import { ComparisonStage } from './ComparisonStage'
 import { TopView } from './TopView'
@@ -44,6 +45,8 @@ export function MonitorComparison({
 
   const { unit, deskEnabled, deskWidth, deskDepth, deskX, deskY } = preferences
   const hasCurved = monitors.some((m) => m.visible && m.curveRadius)
+  // Colors are assigned by enabled position (top to bottom), shared by every view.
+  const colors = useMemo(() => assignColors(monitors), [monitors])
 
   const handleSave = (input: MonitorInput) => {
     if (modal?.editing) {
@@ -67,12 +70,13 @@ export function MonitorComparison({
         curvature, all drawn to scale. Add the models you're weighing to compare their real
         dimensions.
       </Intro>
-      <DetailsTable monitors={monitors} unit={unit} />
-      <ComparisonStage monitors={monitors} alignment={alignment} />
+      <DetailsTable monitors={monitors} unit={unit} colors={colors} />
+      <ComparisonStage monitors={monitors} alignment={alignment} colors={colors} />
       <TopView
         monitors={monitors}
         alignment={alignment}
         topViewAlign={topViewAlign}
+        colors={colors}
         deskEnabled={deskEnabled}
         deskWidth={deskWidth}
         deskDepth={deskDepth}
@@ -83,6 +87,7 @@ export function MonitorComparison({
       <MonitorList
         monitors={monitors}
         unit={unit}
+        colors={colors}
         onAdd={() => setModal({ editing: null })}
         onToggle={toggleVisibility}
         onEdit={(monitor) => setModal({ editing: monitor })}

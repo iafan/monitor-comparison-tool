@@ -1,5 +1,4 @@
 import { useMemo } from 'react'
-import { seriesColor } from '../constants'
 import { physical } from '../lib/geometry'
 import { formatLength } from '../lib/units'
 import type { Alignment, Monitor, TopViewAlign, Unit } from '../types'
@@ -8,6 +7,7 @@ interface Props {
   monitors: Monitor[]
   alignment: Alignment
   topViewAlign: TopViewAlign
+  colors: Record<string, string>
   deskEnabled: boolean
   deskWidth: number
   deskDepth: number
@@ -43,6 +43,7 @@ export function TopView({
   monitors,
   alignment,
   topViewAlign,
+  colors,
   deskEnabled,
   deskWidth,
   deskDepth,
@@ -73,7 +74,7 @@ export function TopView({
       const oy = offsetY(sag)
       return {
         id: m.id,
-        color: seriesColor(m.colorSlot),
+        color: colors[m.id],
         // Absolute arrangement points (before final placement).
         pts: local.map(([x, y]) => [cx + x, y + oy] as [number, number]),
       }
@@ -126,7 +127,7 @@ export function TopView({
     }))
 
     return { mode: 'arcs' as const, viewBox: `0 0 ${vbW.toFixed(2)} ${vbH.toFixed(2)}`, polylines }
-  }, [monitors, alignment, topViewAlign, deskEnabled, deskWidth, deskDepth, deskX, deskY])
+  }, [monitors, alignment, topViewAlign, colors, deskEnabled, deskWidth, deskDepth, deskX, deskY])
 
   if (!layout) return null
 

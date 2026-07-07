@@ -89,7 +89,7 @@ export const CURVATURE_PRESETS = [800, 1000, 1500, 1800, 2300, 2500, 3800]
  * name so the seed is a true class reference — it serializes compactly to
  * `=<classId>` in the URL (no repeated geometry, no encoded name).
  */
-function seedFromClass(classId: string, colorSlot: number): Omit<Monitor, 'id'> {
+function seedFromClass(classId: string): Omit<Monitor, 'id'> {
   const c = getClass(classId)
   if (!c) throw new Error(`Unknown monitor class "${classId}"`)
   return {
@@ -99,18 +99,35 @@ function seedFromClass(classId: string, colorSlot: number): Omit<Monitor, 'id'> 
     diagonal: c.diagonal,
     curveRadius: c.curveRadius,
     visible: true,
-    colorSlot,
     classId,
   }
 }
 
 /** Seeded on first load: a 31.5" QHD flat and a 34" WQHD 1800R curved, from their classes. */
 export const DEFAULT_MONITORS: Omit<Monitor, 'id'>[] = [
-  seedFromClass('31.5-2560x1440', 0),
-  seedFromClass('34-3440x1440-1800r', 1),
+  seedFromClass('31.5-2560x1440'),
+  seedFromClass('34-3440x1440-1800r'),
 ]
 
-/** Maps a monitor's color slot to one of the eight categorical palette tokens. */
-export function seriesColor(slot: number): string {
-  return `var(--series-${(slot % COLOR_SLOTS) + 1})`
+/** Neutral swatch color for a disabled monitor. */
+export const DISABLED_SWATCH = 'var(--swatch-off)'
+
+/** The Nth categorical palette token (0-based), rotating through the eight colors. */
+export function seriesColor(index: number): string {
+  return `var(--series-${(index % COLOR_SLOTS) + 1})`
+}
+
+/**
+ * Assigns a display color to each monitor by its position among the *enabled*
+ * monitors (top to bottom), rotating through the palette — the 9th enabled
+ * monitor reuses the 1st color. Disabled monitors get a neutral gray. Returns a
+ * map keyed by monitor id, so the table, on-screen views, and card list agree.
+ */
+export function assignColors(monitors: Monitor[]): Record<string, string> {
+  const map: Record<string, string> = {}
+  let i = 0
+  for (const m of monitors) {
+    map[m.id] = m.visible ? seriesColor(i++) : DISABLED_SWATCH
+  }
+  return map
 }

@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { seriesColor } from '../constants'
 import { classLabel, getClass, makeClassId, modelsInClass } from '../data'
 import { physical } from '../lib/geometry'
 import { UNIT_LABELS, formatLength } from '../lib/units'
@@ -8,12 +7,14 @@ import type { Monitor, Unit } from '../types'
 interface Props {
   monitor: Monitor
   unit: Unit
+  /** Resolved swatch color (series color when enabled, gray when disabled). */
+  color: string
   onToggle: (id: string) => void
   onEdit: (monitor: Monitor) => void
   onDelete: (monitor: Monitor) => void
 }
 
-export function MonitorCard({ monitor, unit, onToggle, onEdit, onDelete }: Props) {
+export function MonitorCard({ monitor, unit, color, onToggle, onEdit, onDelete }: Props) {
   const p = physical(monitor)
   const [showMatches, setShowMatches] = useState(false)
   // Map to a class — its own if created from one, otherwise derived from geometry.
@@ -42,12 +43,11 @@ export function MonitorCard({ monitor, unit, onToggle, onEdit, onDelete }: Props
         aria-label={`Show ${monitor.name} in comparison`}
         className="size-4"
       />
-      <span
-        className="size-3.5 flex-none rounded-[4px]"
-        style={{ background: seriesColor(monitor.colorSlot) }}
-      />
       <div className="min-w-0 flex-1">
-        <div className="truncate font-semibold">{monitor.name}</div>
+        <div className="flex items-center gap-2">
+          <span className="size-3.5 flex-none rounded-[4px]" style={{ background: color }} />
+          <span className="truncate font-semibold">{monitor.name}</span>
+        </div>
         <div className="text-xs text-[var(--text-muted)]">
           {monitor.resWidth}×{monitor.resHeight} · {monitor.diagonal}" ·{' '}
           {formatLength(p.widthIn, unit, false)}×{formatLength(p.heightIn, unit, false)}{' '}

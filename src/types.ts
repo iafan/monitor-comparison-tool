@@ -13,7 +13,6 @@ export interface Monitor {
   /** Curvature radius in mm (e.g. 1500 for "1500R"); null means a flat panel. */
   curveRadius: number | null
   visible: boolean
-  colorSlot: number
   /** Provenance: the generic class this was created from, if any (see src/data). */
   classId?: string
   /** Provenance: the specific model this was created from, if any. */

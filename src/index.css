@@ -26,6 +26,8 @@
   --series-7: #e87ba4; /* magenta */
   --series-8: #eb6834; /* orange */
 
+  --swatch-off: #5f5e5a; /* disabled monitor */
+
   --danger: #d03b3b;
 }
 
@@ -50,6 +52,8 @@
     --series-7: #d55181;
     --series-8: #d95926;
 
+    --swatch-off: #6f6e69; /* disabled monitor */
+
     --danger: #e66767;
   }
 }
@@ -72,6 +76,8 @@
   --series-6: #e66767;
   --series-7: #d55181;
   --series-8: #d95926;
+
+  --swatch-off: #6f6e69; /* disabled monitor */
 
   --danger: #e66767;
 }

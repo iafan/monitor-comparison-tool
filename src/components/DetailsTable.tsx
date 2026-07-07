@@ -1,4 +1,3 @@
-import { seriesColor } from '../constants'
 import { formatNumber, physical } from '../lib/geometry'
 import { formatLength } from '../lib/units'
 import type { Monitor, Unit } from '../types'
@@ -6,6 +5,7 @@ import type { Monitor, Unit } from '../types'
 interface Props {
   monitors: Monitor[]
   unit: Unit
+  colors: Record<string, string>
 }
 
 const HEADERS = [
@@ -21,7 +21,7 @@ const HEADERS = [
   'Curvature',
 ]
 
-export function DetailsTable({ monitors, unit }: Props) {
+export function DetailsTable({ monitors, unit, colors }: Props) {
   // Only the enabled (visible) monitors — this table replaces the legend at the top.
   const visible = monitors.filter((m) => m.visible)
   return (
@@ -55,7 +55,7 @@ export function DetailsTable({ monitors, unit }: Props) {
                     <td className="px-2.5 py-2">
                       <span
                         className="inline-block size-3 rounded-[3px]"
-                        style={{ background: seriesColor(m.colorSlot) }}
+                        style={{ background: colors[m.id] }}
                       />
                     </td>
                     <td className="px-2.5 py-2">{m.name}</td>

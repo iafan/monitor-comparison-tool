@@ -164,10 +164,7 @@ export function useAppState(): AppStore {
 
   const addMonitor = useCallback(
     (input: MonitorInput) =>
-      mutate((s) => {
-        const nextSlot = s.monitors.length === 0 ? 0 : Math.max(...s.monitors.map((m) => m.colorSlot)) + 1
-        return { ...s, monitors: [...s.monitors, { ...input, id: uid(), visible: true, colorSlot: nextSlot }] }
-      }),
+      mutate((s) => ({ ...s, monitors: [...s.monitors, { ...input, id: uid(), visible: true }] })),
     [mutate],
   )
 

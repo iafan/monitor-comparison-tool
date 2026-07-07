@@ -1,16 +1,16 @@
 import { useMemo } from 'react'
-import { seriesColor } from '../constants'
 import { physical } from '../lib/geometry'
 import type { Alignment, Monitor } from '../types'
 
 interface Props {
   monitors: Monitor[]
   alignment: Alignment
+  colors: Record<string, string>
 }
 
 const PAD = { left: 1, right: 1, top: 1, bottom: 1 }
 
-export function ComparisonStage({ monitors, alignment }: Props) {
+export function ComparisonStage({ monitors, alignment, colors }: Props) {
   const layout = useMemo(() => {
     const visible = monitors.filter((m) => m.visible)
     if (visible.length === 0) return null
@@ -41,7 +41,7 @@ export function ComparisonStage({ monitors, alignment }: Props) {
     // first at the bottom of the z-order and smaller panels layer on top.
     const boxes = items.map(({ m, widthIn, heightIn }) => ({
       id: m.id,
-      color: seriesColor(m.colorSlot),
+      color: colors[m.id],
       x: boxX(widthIn),
       yTop: boxY(heightIn),
       widthIn,
@@ -49,7 +49,7 @@ export function ComparisonStage({ monitors, alignment }: Props) {
     }))
 
     return { vbW, vbH, boxes }
-  }, [monitors, alignment])
+  }, [monitors, alignment, colors])
 
   const hasAny = monitors.length > 0
   const hint = !hasAny

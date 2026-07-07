@@ -68,7 +68,7 @@ const inComparison = (s: AppState) => s.tool === 'comparison'
 //   model   → `<modelId>`   letter-led, e.g. `dell-s3425dw`       (geometry + name from catalogue)
 // Class ids always start with a digit (the diagonal); model ids are asserted to
 // start with a letter in src/data, so digit-vs-letter reliably tells them apart.
-// Color slots are re-derived from position, so they aren't serialized.
+// Colors aren't serialized — they're derived from enabled position at render time.
 
 // Percent-encode a custom monitor name, but render spaces as the friendlier `+`
 // (a literal `+` in a name is escaped to %2B by encodeURIComponent, so this round-trips).
@@ -89,14 +89,14 @@ function encodeMonitor(m: Monitor): string {
   return `${vis}@${m.resWidth}x${m.resHeight}_${m.diagonal}${curve}:${encodeName(m.name)}` // @ ⇒ custom
 }
 
-function decodeMonitor(token: string, index: number): Monitor | null {
+function decodeMonitor(token: string): Monitor | null {
   let visible = true
   let t = token
   if (t.startsWith('-')) {
     visible = false
     t = t.slice(1)
   }
-  const base = { id: uid(), visible, colorSlot: index }
+  const base = { id: uid(), visible }
 
   if (t.startsWith('@')) {
     // custom: geometry before the first ':', percent-encoded name after it.
@@ -134,7 +134,6 @@ function isSeededDefault(monitors: Monitor[]): boolean {
     const d = DEFAULT_MONITORS[i]
     return (
       m.visible &&
-      m.colorSlot === i &&
       m.name === d.name &&
       m.resWidth === d.resWidth &&
       m.resHeight === d.resHeight &&

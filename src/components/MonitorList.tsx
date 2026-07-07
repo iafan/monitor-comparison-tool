@@ -4,13 +4,14 @@ import { MonitorCard } from './MonitorCard'
 interface Props {
   monitors: Monitor[]
   unit: Unit
+  colors: Record<string, string>
   onAdd: () => void
   onToggle: (id: string) => void
   onEdit: (monitor: Monitor) => void
   onDelete: (monitor: Monitor) => void
 }
 
-export function MonitorList({ monitors, unit, onAdd, onToggle, onEdit, onDelete }: Props) {
+export function MonitorList({ monitors, unit, colors, onAdd, onToggle, onEdit, onDelete }: Props) {
   return (
     <section className="mb-6">
       <div className="mb-2.5 flex flex-wrap items-center justify-between gap-3">
@@ -32,6 +33,7 @@ export function MonitorList({ monitors, unit, onAdd, onToggle, onEdit, onDelete 
               key={m.id}
               monitor={m}
               unit={unit}
+              color={colors[m.id]}
               onToggle={onToggle}
               onEdit={onEdit}
               onDelete={onDelete}
