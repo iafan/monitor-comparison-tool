@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Intro } from './Intro'
 
 /**
  * Crosshatch geometry test card drawn at the true device resolution: a square
@@ -139,10 +140,10 @@ export function MonitorGeometry() {
 
   return (
     <section>
-      <p className="mb-5 text-sm text-[var(--text-secondary)]">
+      <Intro>
         Full-screen patterns for checking display geometry — edges, linearity, centering, and
         overscan. Pick a card to go full screen; <kbd>Esc</kbd> or click to exit.
-      </p>
+      </Intro>
 
       <button
         type="button"

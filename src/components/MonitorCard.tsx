@@ -89,7 +89,7 @@ export function MonitorCard({ monitor, unit, onToggle, onEdit, onDelete }: Props
           onClick={() => onDelete(monitor)}
           className="min-h-9 cursor-pointer rounded-lg border border-[var(--danger)] px-2.5 py-1.5 text-sm font-semibold text-[var(--danger)]"
         >
-          Delete
+          Remove
         </button>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Intro } from './Intro'
 
 type Orientation = 'vertical' | 'horizontal'
 
@@ -232,11 +233,11 @@ export function MonitorCheck({ screen, setScreen }: Props) {
 
   return (
     <section>
-      <p className="mb-5 text-sm text-[var(--text-secondary)]">
+      <Intro>
         Full-screen test patterns for spotting dead pixels, backlight bleed, and uniformity issues.
         Pick a pattern to begin — then click or use <kbd>←</kbd>/<kbd>→</kbd> to move between screens,
         and <kbd>Esc</kbd> to exit.
-      </p>
+      </Intro>
 
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {PATTERNS.map((p, i) => (

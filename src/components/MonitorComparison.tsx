@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Header } from './Header'
+import { Intro } from './Intro'
 import { ComparisonStage } from './ComparisonStage'
 import { TopView } from './TopView'
 import { MonitorList } from './MonitorList'
@@ -62,7 +62,11 @@ export function MonitorComparison({
 
   return (
     <>
-      <Header onAdd={() => setModal({ editing: null })} />
+      <Intro>
+        See how monitors stack up side by side — physical size, resolution, pixel density, and
+        curvature, all drawn to scale. Add the models you're weighing to compare their real
+        dimensions.
+      </Intro>
       <DetailsTable monitors={monitors} unit={unit} />
       <ComparisonStage monitors={monitors} alignment={alignment} />
       <TopView
@@ -79,6 +83,7 @@ export function MonitorComparison({
       <MonitorList
         monitors={monitors}
         unit={unit}
+        onAdd={() => setModal({ editing: null })}
         onToggle={toggleVisibility}
         onEdit={(monitor) => setModal({ editing: monitor })}
         onDelete={handleDelete}
