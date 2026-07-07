@@ -30,9 +30,11 @@ export function physical(m: Monitor): Physical {
 }
 
 /**
- * Stable display order: smallest physical panel area first, then alphabetically
+ * Stable display order: largest physical panel area first, then alphabetically
  * by name. Independent of the order monitors were added, so the table, the
- * on-screen views, the card list, and the serialized URL all agree.
+ * on-screen views, the card list, and the serialized URL all agree. Because
+ * the canvas draws in this order, the largest panel is painted first and sits
+ * at the bottom of the z-order, leaving smaller panels layered on top.
  */
 export function sortMonitors(monitors: Monitor[]): Monitor[] {
   return [...monitors].sort((a, b) => {
@@ -40,7 +42,7 @@ export function sortMonitors(monitors: Monitor[]): Monitor[] {
     const pb = physical(b)
     const areaA = pa.widthIn * pa.heightIn
     const areaB = pb.widthIn * pb.heightIn
-    if (areaA !== areaB) return areaA - areaB
+    if (areaA !== areaB) return areaB - areaA
     return a.name.localeCompare(b.name)
   })
 }

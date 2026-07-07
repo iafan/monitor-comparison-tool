@@ -37,17 +37,16 @@ export function ComparisonStage({ monitors, alignment }: Props) {
           ? PAD.top + (maxH - h)
           : PAD.top + (maxH - h) / 2
 
-    // Largest area first, so smaller panels layer on top and stay visible.
-    const boxes = [...items]
-      .sort((a, b) => b.widthIn * b.heightIn - a.widthIn * a.heightIn)
-      .map(({ m, widthIn, heightIn }) => ({
-        id: m.id,
-        color: seriesColor(m.colorSlot),
-        x: boxX(widthIn),
-        yTop: boxY(heightIn),
-        widthIn,
-        heightIn,
-      }))
+    // Render in list order (largest area first), so the largest panel is drawn
+    // first at the bottom of the z-order and smaller panels layer on top.
+    const boxes = items.map(({ m, widthIn, heightIn }) => ({
+      id: m.id,
+      color: seriesColor(m.colorSlot),
+      x: boxX(widthIn),
+      yTop: boxY(heightIn),
+      widthIn,
+      heightIn,
+    }))
 
     return { vbW, vbH, boxes }
   }, [monitors, alignment])
