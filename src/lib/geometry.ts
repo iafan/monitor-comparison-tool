@@ -17,8 +17,36 @@ export interface Physical {
   ratio: string
 }
 
+/**
+ * Samples a monitor's screen arc in physical inches, apex (the screen's
+ * horizontal center, farthest from the viewer) at (0,0) and the arc bowing
+ * toward +y — i.e. toward the viewer, so the two ends sit at +y depth. A flat
+ * panel returns just its two end points. Shared by the top-down comparison view
+ * and the 3D viewer, so both derive curvature the same way.
+ */
+export function arcPoints(
+  widthIn: number,
+  curveRadius: number | null,
+  samples = 48,
+): [number, number][] {
+  if (!curveRadius || curveRadius <= 0) {
+    return [
+      [-widthIn / 2, 0],
+      [widthIn / 2, 0],
+    ]
+  }
+  const radiusIn = curveRadius / 25.4
+  const theta = widthIn / radiusIn
+  const points: [number, number][] = []
+  for (let i = 0; i <= samples; i++) {
+    const beta = -theta / 2 + (theta * i) / samples
+    points.push([radiusIn * Math.sin(beta), radiusIn * (1 - Math.cos(beta))])
+  }
+  return points
+}
+
 /** Derives physical panel dimensions from resolution + diagonal size. */
-export function physical(m: Monitor): Physical {
+export function physical(m: Pick<Monitor, 'resWidth' | 'resHeight' | 'diagonal'>): Physical {
   const diagPx = Math.sqrt(m.resWidth ** 2 + m.resHeight ** 2)
   const widthIn = m.diagonal * (m.resWidth / diagPx)
   const heightIn = m.diagonal * (m.resHeight / diagPx)

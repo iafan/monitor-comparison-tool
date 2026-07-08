@@ -1,5 +1,19 @@
 /** Which tool is active in the top-level tool selector. */
-export type Tool = 'comparison' | 'check' | 'geometry'
+export type Tool = 'comparison' | 'check' | 'geometry' | 'view'
+
+/**
+ * The 3D Viewer's shareable state: which monitor is on screen, how far the eye
+ * sits from it, and how far the head is turned. Distance is stored canonically
+ * in inches (like the desk dimensions) so a unit switch is display-only.
+ */
+export interface ViewSettings {
+  /** Catalogue selection — a class id or a model id (see src/data). */
+  selection: string
+  /** Eye-to-screen distance, in inches. */
+  distanceIn: number
+  /** Head yaw in degrees: 0 faces the screen center, positive turns right. */
+  headAngle: number
+}
 
 /** Explicit color-scheme choice, persisted so it overrides the system default. */
 export type Theme = 'light' | 'dark'

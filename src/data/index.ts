@@ -37,6 +37,51 @@ export function modelsInClass(classId: string): MonitorModel[] {
   return MONITOR_MODELS.filter((m) => m.classId === classId)
 }
 
+/** Geometry + name resolved from a catalogue selection (a class or model id). */
+export interface CatalogueGeometry {
+  name: string
+  resWidth: number
+  resHeight: number
+  diagonal: number
+  curveRadius: number | null
+  /** The class this geometry came from. */
+  classId: string
+  /** The specific model, when the selection was a model rather than a bare class. */
+  modelId?: string
+}
+
+/**
+ * Resolves a picker selection — either a class id or a model id — to concrete
+ * geometry plus a display name. Returns undefined for an unknown id. Used by
+ * tools that let the viewer pick "a class or a specific monitor" (the 3D viewer).
+ */
+export function resolveSelection(id: string): CatalogueGeometry | undefined {
+  const model = MONITOR_MODELS.find((m) => m.id === id)
+  if (model) {
+    const c = CLASS_BY_ID.get(model.classId)
+    if (!c) return undefined
+    return {
+      name: model.name,
+      resWidth: c.resWidth,
+      resHeight: c.resHeight,
+      diagonal: c.diagonal,
+      curveRadius: c.curveRadius,
+      classId: c.id,
+      modelId: model.id,
+    }
+  }
+  const c = CLASS_BY_ID.get(id)
+  if (!c) return undefined
+  return {
+    name: classDefaultName(c),
+    resWidth: c.resWidth,
+    resHeight: c.resHeight,
+    diagonal: c.diagonal,
+    curveRadius: c.curveRadius,
+    classId: c.id,
+  }
+}
+
 /** Convenience for building a monitor's geometry fields from a class. */
 export function classGeometry(id: string): Pick<
   MonitorClass,

@@ -11,9 +11,10 @@ const TOOL_LABELS: Record<Tool, string> = {
   comparison: 'Monitor Size Comparison',
   check: 'Monitor Check',
   geometry: 'Monitor Geometry',
+  view: '3D Viewer',
 }
 
-const TOOL_ORDER: Tool[] = ['comparison', 'check', 'geometry']
+const TOOL_ORDER: Tool[] = ['comparison', 'check', 'geometry', 'view']
 
 export function TopMenu({ tool, onToolChange, theme, onToggleTheme }: Props) {
   const isDark = theme === 'dark'

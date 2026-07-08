@@ -20,10 +20,19 @@
 // are percent-encoded with spaces rendered as `+`; every structural delimiter
 // (`& = ; :`) is a character encodeURIComponent escapes, so names can't collide.
 // Theme is intentionally NOT serialized — it's the viewer's own preference.
-import { CHECK_SCREEN_IDS, DEFAULT_MONITORS } from '../constants'
-import { MONITOR_MODELS, classDefaultName, getClass } from '../data'
+import { CHECK_SCREEN_IDS, DEFAULT_MONITORS, DEFAULT_VIEW } from '../constants'
+import { MONITOR_MODELS, classDefaultName, getClass, resolveSelection } from '../data'
 import { uid } from './storage'
-import type { Alignment, Monitor, Preferences, Theme, Tool, TopViewAlign, VisibleAreaFrame } from '../types'
+import type {
+  Alignment,
+  Monitor,
+  Preferences,
+  Theme,
+  Tool,
+  TopViewAlign,
+  ViewSettings,
+  VisibleAreaFrame,
+} from '../types'
 
 export interface AppState {
   tool: Tool
@@ -37,6 +46,8 @@ export interface AppState {
   checkScreen: string | null
   /** Monitor Geometry visible-area frame, or null for the full-screen default. */
   visibleFrame: VisibleAreaFrame | null
+  /** 3D Viewer settings (monitor, eye distance, head angle). */
+  view: ViewSettings
 }
 
 /** A decoded (partial) state; preferences arrive field-by-field from several keys. */
@@ -60,6 +71,7 @@ interface Setting<T> {
 }
 
 const inComparison = (s: AppState) => s.tool === 'comparison'
+const inView = (s: AppState) => s.tool === 'view'
 
 // ── Monitor list codec ────────────────────────────────────────────────────────
 // Each monitor is one token; tokens are `;`-joined. A leading `-` marks hidden.
@@ -231,9 +243,33 @@ const SETTINGS: Setting<any>[] = [
       get: (s) => s.tool,
       set: (d, v) => (d.tool = v),
       isDefault: (v) => v === 'comparison',
-      encode: (v) => (v === 'check' ? 'k' : 'g'),
-      decode: (raw) => (raw === 'k' ? 'check' : raw === 'g' ? 'geometry' : undefined),
+      encode: (v) => (v === 'check' ? 'k' : v === 'geometry' ? 'g' : 'v'),
+      decode: (raw) =>
+        raw === 'k' ? 'check' : raw === 'g' ? 'geometry' : raw === 'v' ? 'view' : undefined,
     } as Setting<Tool>,
+    {
+      // 3D Viewer state as one compact token: `<selection>_<distanceIn>_<headAngle>`.
+      // Class/model ids never contain `_`, so it's an unambiguous separator.
+      key: 'v',
+      get: (s) => s.view,
+      set: (d, v) => (d.view = v),
+      isDefault: (v) =>
+        v.selection === DEFAULT_VIEW.selection &&
+        v.distanceIn === DEFAULT_VIEW.distanceIn &&
+        v.headAngle === DEFAULT_VIEW.headAngle,
+      encode: (v) => `${v.selection}_${v.distanceIn}_${v.headAngle}`,
+      decode: (raw) => {
+        const parts = raw.split('_')
+        if (parts.length !== 3) return undefined
+        const [selection, distStr, angStr] = parts
+        if (!resolveSelection(selection)) return undefined
+        const distanceIn = Number(distStr)
+        const headAngle = Number(angStr)
+        if (!Number.isFinite(distanceIn) || !Number.isFinite(headAngle)) return undefined
+        return { selection, distanceIn, headAngle }
+      },
+      relevant: inView,
+    } as Setting<ViewSettings>,
     {
       key: 'tv',
       get: (s) => s.topViewAlign,
@@ -291,6 +327,7 @@ export function applyDecoded(base: AppState, d: Decoded): AppState {
     topViewAlign: d.topViewAlign ?? base.topViewAlign,
     checkScreen: d.checkScreen ?? base.checkScreen,
     visibleFrame: d.visibleFrame ?? base.visibleFrame,
+    view: d.view ?? base.view,
     preferences: { ...base.preferences, ...d.preferences },
   }
 }

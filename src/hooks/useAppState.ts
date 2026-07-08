@@ -7,6 +7,7 @@ import type {
   Theme,
   Tool,
   TopViewAlign,
+  ViewSettings,
   VisibleAreaFrame,
 } from '../types'
 import { sortMonitors } from '../lib/geometry'
@@ -17,6 +18,7 @@ import {
   loadTheme,
   loadTool,
   loadTopViewAlign,
+  loadView,
   loadVisibleFrame,
   saveAlignment,
   saveMonitors,
@@ -24,6 +26,7 @@ import {
   saveTheme,
   saveTool,
   saveTopViewAlign,
+  saveView,
   saveVisibleFrame,
   uid,
 } from '../lib/storage'
@@ -48,6 +51,7 @@ function storedState(): AppState {
     preferences: loadPreferences(),
     checkScreen: null,
     visibleFrame: loadVisibleFrame(),
+    view: loadView(),
   }
 }
 
@@ -87,6 +91,9 @@ export interface AppStore {
   /** Monitor Geometry visible-area frame; null = full-screen default. */
   visibleFrame: VisibleAreaFrame | null
   setVisibleFrame: (frame: VisibleAreaFrame | null) => void
+  /** 3D Viewer settings; setView patches individual fields. */
+  view: ViewSettings
+  setView: (patch: Partial<ViewSettings>) => void
 }
 
 export function useAppState(): AppStore {
@@ -125,6 +132,7 @@ export function useAppState(): AppStore {
     saveTopViewAlign(state.topViewAlign)
     savePreferences(state.preferences)
     saveVisibleFrame(state.visibleFrame)
+    saveView(state.view)
   }, [state, monitors])
 
   // Re-hydrate when the user edits the URL by hand or navigates back/forward.
@@ -183,6 +191,11 @@ export function useAppState(): AppStore {
     [mutate],
   )
 
+  const setView = useCallback(
+    (patch: Partial<ViewSettings>) => mutate((s) => ({ ...s, view: { ...s.view, ...patch } })),
+    [mutate],
+  )
+
   const addMonitor = useCallback(
     (input: MonitorInput) =>
       mutate((s) => ({ ...s, monitors: [...s.monitors, { ...input, id: uid(), visible: true }] })),
@@ -226,5 +239,7 @@ export function useAppState(): AppStore {
     setCheckScreen,
     visibleFrame: state.visibleFrame,
     setVisibleFrame,
+    view: state.view,
+    setView,
   }
 }

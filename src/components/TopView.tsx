@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { physical } from '../lib/geometry'
+import { arcPoints, physical } from '../lib/geometry'
 import { formatLength } from '../lib/units'
 import type { Alignment, Monitor, TopViewAlign, Unit } from '../types'
 
@@ -20,24 +20,6 @@ const PAD_Y = 0.5
 const ARC_SAMPLES = 48
 /** Cap how wide/short the strip can get so shallow arcs still render a visible band. */
 const MAX_ASPECT = 7
-
-/** Arc points in physical inches, apex at (0,0) curving toward +y (viewer). */
-function arcLocalPoints(widthIn: number, curveRadius: number | null): [number, number][] {
-  if (!curveRadius || curveRadius <= 0) {
-    return [
-      [-widthIn / 2, 0],
-      [widthIn / 2, 0],
-    ]
-  }
-  const radiusIn = curveRadius / 25.4
-  const theta = widthIn / radiusIn
-  const points: [number, number][] = []
-  for (let i = 0; i <= ARC_SAMPLES; i++) {
-    const beta = -theta / 2 + (theta * i) / ARC_SAMPLES
-    points.push([radiusIn * Math.sin(beta), radiusIn * (1 - Math.cos(beta))])
-  }
-  return points
-}
 
 export function TopView({
   monitors,
@@ -68,7 +50,7 @@ export function TopView({
       topViewAlign === 'back' ? 0 : topViewAlign === 'front' ? -sag : -sag / 2
 
     const arcs = items.map(({ m, widthIn }) => {
-      const local = arcLocalPoints(widthIn, m.curveRadius)
+      const local = arcPoints(widthIn, m.curveRadius, ARC_SAMPLES)
       const sag = local[local.length - 1][1]
       const cx = centerXof(widthIn)
       const oy = offsetY(sag)

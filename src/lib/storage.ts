@@ -3,15 +3,27 @@ import {
   ALIGNMENTS,
   DEFAULT_MONITORS,
   DEFAULT_PREFERENCES,
+  DEFAULT_VIEW,
   PREFS_KEY,
   STORAGE_KEY,
   THEME_KEY,
   TOOL_KEY,
   TOPVIEW_ALIGN_KEY,
   TOPVIEW_ALIGNS,
+  VIEW_KEY,
   VISIBLE_AREA_KEY,
 } from '../constants'
-import type { Alignment, Monitor, Preferences, Theme, Tool, TopViewAlign, VisibleAreaFrame } from '../types'
+import { resolveSelection } from '../data'
+import type {
+  Alignment,
+  Monitor,
+  Preferences,
+  Theme,
+  Tool,
+  TopViewAlign,
+  ViewSettings,
+  VisibleAreaFrame,
+} from '../types'
 
 export function uid(): string {
   return crypto.randomUUID
@@ -74,7 +86,9 @@ export function savePreferences(prefs: Preferences): void {
 
 export function loadTool(): Tool {
   const raw = localStorage.getItem(TOOL_KEY)
-  return raw === 'comparison' || raw === 'check' || raw === 'geometry' ? raw : 'comparison'
+  return raw === 'comparison' || raw === 'check' || raw === 'geometry' || raw === 'view'
+    ? raw
+    : 'comparison'
 }
 
 export function saveTool(tool: Tool): void {
@@ -109,4 +123,32 @@ export function loadVisibleFrame(): VisibleAreaFrame | null {
 export function saveVisibleFrame(frame: VisibleAreaFrame | null): void {
   if (frame) localStorage.setItem(VISIBLE_AREA_KEY, JSON.stringify(frame))
   else localStorage.removeItem(VISIBLE_AREA_KEY)
+}
+
+/** The saved 3D Viewer settings, falling back field-by-field to the defaults. */
+export function loadView(): ViewSettings {
+  try {
+    const raw = localStorage.getItem(VIEW_KEY)
+    if (!raw) return DEFAULT_VIEW
+    const p = JSON.parse(raw) as Partial<ViewSettings>
+    const selection =
+      typeof p.selection === 'string' && resolveSelection(p.selection)
+        ? p.selection
+        : DEFAULT_VIEW.selection
+    const distanceIn =
+      typeof p.distanceIn === 'number' && Number.isFinite(p.distanceIn)
+        ? p.distanceIn
+        : DEFAULT_VIEW.distanceIn
+    const headAngle =
+      typeof p.headAngle === 'number' && Number.isFinite(p.headAngle)
+        ? p.headAngle
+        : DEFAULT_VIEW.headAngle
+    return { selection, distanceIn, headAngle }
+  } catch {
+    return DEFAULT_VIEW
+  }
+}
+
+export function saveView(view: ViewSettings): void {
+  localStorage.setItem(VIEW_KEY, JSON.stringify(view))
 }

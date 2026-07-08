@@ -1,5 +1,5 @@
 import { classDefaultName, getClass } from './data'
-import type { Alignment, Monitor, Preferences, TopViewAlign } from './types'
+import type { Alignment, Monitor, Preferences, TopViewAlign, ViewSettings } from './types'
 
 export const STORAGE_KEY = 'monitor-comparison:monitors:v1'
 export const ALIGN_KEY = 'monitor-comparison:alignment:v1'
@@ -8,7 +8,23 @@ export const PREFS_KEY = 'monitor-comparison:preferences:v1'
 export const TOOL_KEY = 'monitor-comparison:tool:v1'
 export const THEME_KEY = 'monitor-comparison:theme:v1'
 export const VISIBLE_AREA_KEY = 'monitor-comparison:visible-area:v1'
+export const VIEW_KEY = 'monitor-comparison:view:v1'
 export const COLOR_SLOTS = 8
+
+/**
+ * 3D Viewer defaults: a 34" 1800R ultrawide (curvature is the interesting case),
+ * eyes ~60 cm from the screen, head facing straight ahead.
+ */
+export const DEFAULT_VIEW: ViewSettings = {
+  selection: '34-3440x1440-1800r',
+  distanceIn: 23.6,
+  headAngle: 0,
+}
+
+/** Bounds for the 3D Viewer's inputs (inches / degrees). */
+export const VIEW_DISTANCE_MIN_IN = 8
+export const VIEW_DISTANCE_MAX_IN = 60
+export const VIEW_HEAD_ANGLE_MAX = 75
 
 /** Valid Monitor Check screen ids (mirrors PATTERNS in MonitorCheck); used to validate the URL `scr` value. */
 export const CHECK_SCREEN_IDS = [
