@@ -23,16 +23,84 @@ const FOV_V_DEG = 50
 const ASPECT = 16 / 9
 const H_FOV_DEG = (Math.atan(Math.tan((FOV_V_DEG * Math.PI) / 360) * ASPECT) * 360) / Math.PI
 
-const BEZEL_IN = 0.4
+// Bezel widths (inches). The bottom is a larger "chin", like a real monitor.
+const BEZEL_SIDE = 0.4
+const BEZEL_TOP = 0.4
+const BEZEL_BOTTOM = 0.8
 /** Arc tessellation for the 3D mesh — denser than the 2D top view so the curve reads smoothly. */
 const MESH_SAMPLES = 72
 
 const deg2rad = (d: number) => (d * Math.PI) / 180
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n))
 
+/** WebGL guarantees at least 4096²; cap the texture there and downscale larger panels. */
+const MAX_TEX = 4096
+
 // ── Screen content texture ────────────────────────────────────────────────────
-// A faux desktop drawn to a canvas, so no external asset is fetched. Its grid and
-// windows make the panel's curvature obvious once wrapped onto the mesh.
+// A faux desktop drawn to a canvas at the panel's TRUE pixel resolution, so
+// everything is sized in real device pixels: the windows (800×600 and 1440×900)
+// and the taskbar icons occupy the same fraction of the panel a real window would,
+// making pixel density visible — a window looks tiny on a dense 4K panel and large
+// on a 1440p one. No external asset is fetched.
+
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  const rad = Math.min(r, w / 2, h / 2)
+  ctx.beginPath()
+  ctx.moveTo(x + rad, y)
+  ctx.arcTo(x + w, y, x + w, y + h, rad)
+  ctx.arcTo(x + w, y + h, x, y + h, rad)
+  ctx.arcTo(x, y + h, x, y, rad)
+  ctx.arcTo(x, y, x + w, y, rad)
+  ctx.closePath()
+}
+
+// Coordinates below are all in true device pixels.
+const TASKBAR_H = 48
+const TITLE_H = 40
+const ICON = 40
+const ICON_GAP = 14
+
+/** A macOS/Windows-ish window with a title bar and its pixel size printed at 60px. */
+function drawWindow(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, accent: string) {
+  // Soft drop shadow on all sides, so an overlapping window casts a visible
+  // penumbra on the one beneath and their boundaries stay legible. Painted with
+  // the body fill, then reset so the title bar and text below stay crisp.
+  ctx.save()
+  ctx.shadowColor = 'rgba(0,0,0,0.5)'
+  ctx.shadowBlur = 42
+  ctx.shadowOffsetX = 0
+  ctx.shadowOffsetY = 20
+  ctx.fillStyle = '#eef2f7'
+  roundRect(ctx, x, y, w, h, 14)
+  ctx.fill()
+  ctx.restore()
+
+  ctx.save()
+  roundRect(ctx, x, y, w, h, 14)
+  ctx.clip()
+  ctx.fillStyle = accent
+  ctx.fillRect(x, y, w, TITLE_H)
+  ctx.restore()
+
+  const dot = (cx: number, color: string) => {
+    ctx.fillStyle = color
+    ctx.beginPath()
+    ctx.arc(cx, y + TITLE_H / 2, 7, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  dot(x + 24, '#f87171')
+  dot(x + 48, '#fbbf24')
+  dot(x + 72, '#34d399')
+
+  ctx.fillStyle = '#1e293b'
+  ctx.font = 'bold 60px sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(`${w}×${h}`, x + w / 2, y + TITLE_H + (h - TITLE_H) / 2)
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'alphabetic'
+}
+
 function drawDesktop(ctx: CanvasRenderingContext2D, W: number, H: number) {
   const bg = ctx.createLinearGradient(0, 0, W, H)
   bg.addColorStop(0, '#0e7490')
@@ -41,65 +109,57 @@ function drawDesktop(ctx: CanvasRenderingContext2D, W: number, H: number) {
   ctx.fillStyle = bg
   ctx.fillRect(0, 0, W, H)
 
-  // Faint grid to reveal curvature.
-  ctx.strokeStyle = 'rgba(255,255,255,0.06)'
-  ctx.lineWidth = Math.max(1, W / 1600)
-  const step = W / 32
-  for (let x = step; x < W; x += step) {
-    ctx.beginPath()
-    ctx.moveTo(x, 0)
-    ctx.lineTo(x, H)
-    ctx.stroke()
+  // Faint 128px grid to reveal curvature on the mesh.
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)'
+  ctx.lineWidth = 1
+  for (let x = 128; x < W; x += 128) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke()
   }
-  for (let y = step; y < H; y += step) {
-    ctx.beginPath()
-    ctx.moveTo(0, y)
-    ctx.lineTo(W, y)
-    ctx.stroke()
+  for (let y = 128; y < H; y += 128) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke()
   }
 
-  const window = (x: number, y: number, w: number, h: number, tint: string) => {
-    ctx.fillStyle = 'rgba(15,23,42,0.55)'
-    ctx.fillRect(x + 6, y + 8, w, h)
-    ctx.fillStyle = '#e5e7eb'
-    ctx.fillRect(x, y, w, h)
-    ctx.fillStyle = tint
-    ctx.fillRect(x, y, w, 34)
-    ctx.fillStyle = '#f87171'
-    ctx.beginPath(); ctx.arc(x + 18, y + 17, 6, 0, Math.PI * 2); ctx.fill()
-    ctx.fillStyle = '#fbbf24'
-    ctx.beginPath(); ctx.arc(x + 40, y + 17, 6, 0, Math.PI * 2); ctx.fill()
-    ctx.fillStyle = '#34d399'
-    ctx.beginPath(); ctx.arc(x + 62, y + 17, 6, 0, Math.PI * 2); ctx.fill()
-    ctx.fillStyle = '#94a3b8'
-    for (let i = 0; i < 5; i++) ctx.fillRect(x + 18, y + 56 + i * 26, w - 36 - (i % 2) * 60, 10)
-  }
+  // Two windows at real pixel sizes, vertically centered in the desktop area.
+  const area = H - TASKBAR_H
+  const win1 = { w: 800, h: 600 }
+  const win2 = { w: 1440, h: 900 }
+  drawWindow(ctx, Math.round(W * 0.1), Math.round((area - win1.h) / 2), win1.w, win1.h, '#2563eb')
+  drawWindow(ctx, Math.round(W - win2.w - W * 0.08), Math.round((area - win2.h) / 2), win2.w, win2.h, '#7c3aed')
 
-  window(W * 0.06, H * 0.16, W * 0.4, H * 0.55, '#2563eb')
-  window(W * 0.52, H * 0.28, W * 0.38, H * 0.5, '#7c3aed')
+  // Taskbar with true-to-size icons.
+  ctx.fillStyle = 'rgba(2,6,23,0.78)'
+  ctx.fillRect(0, H - TASKBAR_H, W, TASKBAR_H)
+  const pad = (TASKBAR_H - ICON) / 2
+  const palette = ['#38bdf8', '#34d399', '#fbbf24', '#f472b6', '#a78bfa', '#f87171', '#60a5fa', '#4ade80']
+  palette.forEach((color, i) => {
+    ctx.fillStyle = color
+    roundRect(ctx, pad + i * (ICON + ICON_GAP), H - TASKBAR_H + pad, ICON, ICON, 8)
+    ctx.fill()
+  })
 
-  // Taskbar.
-  ctx.fillStyle = 'rgba(2,6,23,0.72)'
-  ctx.fillRect(0, H - 44, W, 44)
-  ctx.fillStyle = '#38bdf8'
-  for (let i = 0; i < 6; i++) ctx.fillRect(20 + i * 46, H - 34, 30, 24)
-
-  // Clock.
   ctx.fillStyle = '#e2e8f0'
-  ctx.font = `${Math.round(H / 28)}px sans-serif`
+  ctx.font = '28px sans-serif'
   ctx.textAlign = 'right'
-  ctx.fillText('12:00', W - 24, H - 16)
+  ctx.textBaseline = 'middle'
+  ctx.fillText('12:00', W - 24, H - TASKBAR_H / 2)
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'alphabetic'
 }
 
 function useScreenTexture(resWidth: number, resHeight: number) {
   return useMemo(() => {
-    const W = 1600
-    const H = Math.max(1, Math.round((W * resHeight) / resWidth))
+    // Draw at native resolution when it fits, else uniformly downscale the buffer.
+    // The content is drawn in device-pixel space regardless, so proportions (and
+    // thus apparent pixel density) are identical either way — only sharpness drops.
+    const scale = Math.min(1, MAX_TEX / Math.max(resWidth, resHeight))
     const canvas = document.createElement('canvas')
-    canvas.width = W
-    canvas.height = H
+    canvas.width = Math.max(1, Math.round(resWidth * scale))
+    canvas.height = Math.max(1, Math.round(resHeight * scale))
     const ctx = canvas.getContext('2d')
-    if (ctx) drawDesktop(ctx, W, H)
+    if (ctx) {
+      ctx.scale(scale, scale)
+      drawDesktop(ctx, resWidth, resHeight)
+    }
     const tex = new THREE.CanvasTexture(canvas)
     tex.colorSpace = THREE.SRGBColorSpace
     tex.anisotropy = 4
@@ -167,7 +227,8 @@ function ScreenMesh({
     [widthIn, heightIn, curveRadius],
   )
   const bezelGeo = useMemo(
-    () => buildCurvedGeometry(widthIn + 2 * BEZEL_IN, heightIn + 2 * BEZEL_IN, curveRadius),
+    () =>
+      buildCurvedGeometry(widthIn + 2 * BEZEL_SIDE, heightIn + BEZEL_TOP + BEZEL_BOTTOM, curveRadius),
     [widthIn, heightIn, curveRadius],
   )
   const screenMat = useMemo(
@@ -192,7 +253,7 @@ function ScreenMesh({
   return (
     <group>
       {/* Bezel sits just behind the screen so it shows as a border around all four edges. */}
-      <mesh geometry={bezelGeo} material={bezelMat} position={[0, 0, -0.2]} />
+      <mesh geometry={bezelGeo} material={bezelMat} position={[0, (BEZEL_TOP - BEZEL_BOTTOM) / 2, -0.2]} />
       <mesh geometry={screenGeo} material={screenMat} />
     </group>
   )
