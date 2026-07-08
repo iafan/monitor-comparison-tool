@@ -4,7 +4,7 @@ interface Props {
   tool: Tool
   onToolChange: (tool: Tool) => void
   theme: Theme
-  onToggleTheme: () => void
+  onOpenSettings: () => void
 }
 
 const TOOL_LABELS: Record<Tool, string> = {
@@ -16,7 +16,7 @@ const TOOL_LABELS: Record<Tool, string> = {
 
 const TOOL_ORDER: Tool[] = ['comparison', 'simulator', 'check', 'geometry']
 
-export function TopMenu({ tool, onToolChange, theme, onToggleTheme }: Props) {
+export function TopMenu({ tool, onToolChange, theme, onOpenSettings }: Props) {
   const isDark = theme === 'dark'
 
   // Clicking the logo returns to a clean "/" URL and reloads, so the app
@@ -69,27 +69,24 @@ export function TopMenu({ tool, onToolChange, theme, onToggleTheme }: Props) {
 
         <button
           type="button"
-          onClick={onToggleTheme}
-          aria-pressed={isDark}
-          title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          onClick={onOpenSettings}
+          title="Settings"
           className="flex size-11 flex-none cursor-pointer items-center justify-center justify-self-end rounded-lg border border-[var(--border)] bg-[var(--surface-1)] text-[var(--text-secondary)]"
         >
-          <span className="sr-only">{isDark ? 'Switch to light mode' : 'Switch to dark mode'}</span>
-          {isDark ? (
-            /* Sun — click to go light */
-            <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-              <circle cx="12" cy="12" r="4.5" />
-              <path
-                strokeLinecap="round"
-                d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"
-              />
-            </svg>
-          ) : (
-            /* Moon — click to go dark */
-            <svg viewBox="0 0 24 24" className="size-5" fill="currentColor" aria-hidden="true">
-              <path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z" />
-            </svg>
-          )}
+          <span className="sr-only">Open settings</span>
+          {/* Lucide "menu" (hamburger) */}
+          <svg
+            viewBox="0 0 24 24"
+            className="size-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
         </button>
       </nav>
     </div>

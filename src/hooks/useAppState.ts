@@ -74,7 +74,9 @@ export interface AppStore {
   setTool: (t: Tool) => void
   /** Resolved light/dark theme for rendering. */
   theme: Theme
-  toggleTheme: () => void
+  /** The viewer's raw preference: null = Auto (follow the system). */
+  themeChoice: Theme | null
+  setThemeChoice: (choice: Theme | null) => void
   monitors: Monitor[]
   addMonitor: (input: MonitorInput) => void
   updateMonitor: (id: string, input: MonitorInput) => void
@@ -161,13 +163,12 @@ export function useAppState(): AppStore {
   const setTool = useCallback((tool: Tool) => navigate((s) => ({ ...s, tool })), [navigate])
 
   // Theme is the viewer's own preference: always persisted, never in the URL, and
-  // it doesn't flip the ephemeral flag (flipping dark mode on a shared link must
-  // not adopt that link's monitors into the viewer's localStorage).
-  const toggleTheme = useCallback(() => {
-    const next: Theme = resolvedTheme === 'dark' ? 'light' : 'dark'
-    saveTheme(next)
-    setState((s) => ({ ...s, themeChoice: next }))
-  }, [resolvedTheme])
+  // it doesn't flip the ephemeral flag (choosing a theme on a shared link must
+  // not adopt that link's monitors into the viewer's localStorage). null = Auto.
+  const setThemeChoice = useCallback((choice: Theme | null) => {
+    saveTheme(choice)
+    setState((s) => ({ ...s, themeChoice: choice }))
+  }, [])
 
   const setAlignment = useCallback((alignment: Alignment) => mutate((s) => ({ ...s, alignment })), [mutate])
 
@@ -224,7 +225,8 @@ export function useAppState(): AppStore {
     tool: state.tool,
     setTool,
     theme: resolvedTheme,
-    toggleTheme,
+    themeChoice: state.themeChoice,
+    setThemeChoice,
     monitors,
     addMonitor,
     updateMonitor,

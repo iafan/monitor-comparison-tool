@@ -5,7 +5,6 @@ import { ComparisonStage } from './ComparisonStage'
 import { TopView } from './TopView'
 import { MonitorList } from './MonitorList'
 import { DetailsTable } from './DetailsTable'
-import { Preferences } from './Preferences'
 import { AlignmentPicker } from './AlignmentPicker'
 import { DeskSettings } from './DeskSettings'
 import { MonitorFormModal } from './MonitorFormModal'
@@ -93,7 +92,6 @@ export function MonitorComparison({
         onEdit={(monitor) => setModal({ editing: monitor })}
         onDelete={handleDelete}
       />
-      <Preferences preferences={preferences} onChange={updatePreferences} />
       <AlignmentPicker
         value={alignment}
         onChange={setAlignment}

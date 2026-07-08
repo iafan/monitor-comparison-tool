@@ -1,5 +1,6 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { TopMenu } from './components/TopMenu'
+import { SettingsModal } from './components/SettingsModal'
 import { useAppState } from './hooks/useAppState'
 
 // Every tool is code-split into its own chunk so the initial load is just the
@@ -22,10 +23,20 @@ function ToolLoading() {
 
 export function App() {
   const app = useAppState()
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   return (
     <>
-      <TopMenu tool={app.tool} onToolChange={app.setTool} theme={app.theme} onToggleTheme={app.toggleTheme} />
+      <TopMenu tool={app.tool} onToolChange={app.setTool} theme={app.theme} onOpenSettings={() => setSettingsOpen(true)} />
+      {settingsOpen && (
+        <SettingsModal
+          themeChoice={app.themeChoice}
+          onThemeChange={app.setThemeChoice}
+          unit={app.preferences.unit}
+          onUnitChange={(u) => app.updatePreferences({ unit: u })}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
       <main className="mx-auto max-w-[900px] px-4 pt-6 pb-12">
         <Suspense fallback={<ToolLoading />}>
           {app.tool === 'comparison' && (

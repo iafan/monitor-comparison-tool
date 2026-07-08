@@ -101,8 +101,10 @@ export function loadTheme(): Theme | null {
   return raw === 'light' || raw === 'dark' ? raw : null
 }
 
-export function saveTheme(theme: Theme): void {
-  localStorage.setItem(THEME_KEY, theme)
+/** Persist the theme choice. null means "Auto" — clear the key so we follow the system. */
+export function saveTheme(theme: Theme | null): void {
+  if (theme === null) localStorage.removeItem(THEME_KEY)
+  else localStorage.setItem(THEME_KEY, theme)
 }
 
 const FRAME_KEYS = ['topX', 'topY', 'botX', 'botY', 'radius'] as const

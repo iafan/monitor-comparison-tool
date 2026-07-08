@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { CURVATURE_PRESETS, PRESETS } from '../constants'
 import { MONITOR_CLASSES, MONITOR_MODELS, classLabel, getClass } from '../data'
 import type { MonitorClass, MonitorModel } from '../data'
+import { Dialog } from './Dialog'
 import { NumberField } from './NumberField'
 import type { Monitor, MonitorInput } from '../types'
 
@@ -54,15 +55,6 @@ export function MonitorFormModal({ editing, onSave, onClose }: Props) {
   const preset = presetKey(resWidth, resHeight)
   const radiusPreset =
     curveRadius !== null && CURVATURE_PRESETS.includes(curveRadius) ? String(curveRadius) : ''
-
-  // Close on Escape.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
 
   // Any hand-edit in Custom detaches the monitor from a class/model.
   const clearProvenance = () => {
@@ -148,22 +140,8 @@ export function MonitorFormModal({ editing, onSave, onClose }: Props) {
   }
 
   return (
-    <div
-      className="fixed inset-0 z-10 flex items-end justify-center bg-black/50 sm:items-center"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose()
-      }}
-    >
-      <div
-        className="max-h-[90vh] w-full max-w-[480px] overflow-y-auto rounded-t-2xl bg-[var(--surface-1)] p-5 sm:rounded-2xl"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="monitor-form-title"
-      >
-        <h2 id="monitor-form-title" className="mb-4 text-base font-semibold">
-          {editing ? 'Edit monitor' : 'Add monitor'}
-        </h2>
-        <form onSubmit={submit} className="flex flex-col gap-3.5">
+    <Dialog title={editing ? 'Edit monitor' : 'Add monitor'} onClose={onClose}>
+      <form onSubmit={submit} className="flex flex-col gap-3.5">
           {/* Source selector — Custom keeps the manual fields (incl. name); Class/Model pick from the catalogue. */}
           <div
             className="inline-flex overflow-hidden rounded-lg border border-[var(--border)]"
@@ -423,8 +401,7 @@ export function MonitorFormModal({ editing, onSave, onClose }: Props) {
               {editing ? 'Save changes' : 'Add monitor'}
             </button>
           </div>
-        </form>
-      </div>
-    </div>
+      </form>
+    </Dialog>
   )
 }
