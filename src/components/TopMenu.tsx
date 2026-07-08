@@ -71,13 +71,13 @@ export function TopMenu({ tool, onToolChange, theme, onOpenSettings }: Props) {
           type="button"
           onClick={onOpenSettings}
           title="Settings"
-          className="flex size-11 flex-none cursor-pointer items-center justify-center justify-self-end rounded-lg border border-[var(--border)] bg-[var(--surface-1)] text-[var(--text-secondary)]"
+          className="flex size-11 flex-none cursor-pointer items-center justify-center justify-self-end text-[var(--text-primary)]"
         >
           <span className="sr-only">Open settings</span>
-          {/* Lucide "menu" (hamburger) */}
+          {/* Lucide "menu" (hamburger), sized to sit optically next to the logo circle */}
           <svg
             viewBox="0 0 24 24"
-            className="size-5"
+            className="size-8"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
