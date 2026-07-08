@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { Grid, PerspectiveCamera } from '@react-three/drei'
 import * as THREE from 'three'
@@ -40,8 +40,11 @@ const MESH_SAMPLES = 72
 const deg2rad = (d: number) => (d * Math.PI) / 180
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n))
 const HEAD_DRAG_SENS = 0.25 // degrees of head turn per pixel dragged
-const HEAD_KEY_STEP = 3 // degrees per left/right arrow press
-const DIST_KEY_STEP = 1 // inches per up/down arrow press (up = closer)
+const KEY_ANIM_MS = 180 // ease-in-out duration for a single arrow-key step
+const RECENTER_MS = 450 // ease-in-out duration for recenter / nominal-distance sync
+const EPS = 1e-6 // nudge so a value already on an integer steps to the next one
+/** easeInOutCubic. */
+const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
 
 /** WebGL guarantees at least 4096²; cap the texture there and downscale larger panels. */
 const MAX_TEX = 4096
@@ -436,14 +439,18 @@ function TopDown({
   widthIn,
   curveRadius,
   distanceIn,
+  nominalDistanceIn,
   headAngle,
   unit,
   onDistance,
   onRotate,
 }: {
   widthIn: number
-  curveRadius: number | null
+  /** The actual (keyboard-controlled) eye distance — drives the eye and rays. */
   distanceIn: number
+  /** The nominal (input-field / persisted) distance — drawn as a tick marker. */
+  nominalDistanceIn: number
+  curveRadius: number | null
   headAngle: number
   unit: Unit
   onDistance: (inches: number) => void
@@ -472,7 +479,7 @@ function TopDown({
     const arc = arcPoints(widthIn, curveRadius, 48)
     const halfW = Math.max(...arc.map((p) => Math.abs(p[0])))
     const worldTop = -1
-    const worldBottom = distanceIn + 3
+    const worldBottom = Math.max(distanceIn, nominalDistanceIn) + 3
     const worldHalfW = halfW + 2
     const worldW = worldHalfW * 2
     const worldH = worldBottom - worldTop
@@ -496,8 +503,10 @@ function TopDown({
     const right = ray(headAngle + H_FOV_DEG / 2)
     const center = ray(headAngle)
 
-    return { screen, eye, apex, left, right, center }
-  }, [widthIn, curveRadius, distanceIn, headAngle])
+    const nominalY = py(nominalDistanceIn)
+
+    return { screen, eye, apex, left, right, center, cx, nominalY }
+  }, [widthIn, curveRadius, distanceIn, nominalDistanceIn, headAngle])
 
   return (
     <div
@@ -553,7 +562,17 @@ function TopDown({
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        {/* The eye. */}
+        {/* Nominal (set) distance — a short tick on the center axis. */}
+        <line
+          x1={geom.cx - 12}
+          y1={geom.nominalY}
+          x2={geom.cx + 12}
+          y2={geom.nominalY}
+          stroke="var(--text-secondary)"
+          strokeWidth={2.5}
+          strokeLinecap="round"
+        />
+        {/* The eye — the actual (current) position. */}
         <circle cx={geom.eye.x} cy={geom.eye.y} r={7} fill="var(--series-1)" />
         <text x={geom.eye.x + 12} y={geom.eye.y + 4} fill="currentColor" fontSize={13}>
           Eyes
@@ -568,7 +587,7 @@ function TopDown({
         <label className="flex cursor-text items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-1)]/95 px-2 py-1.5 shadow-sm backdrop-blur">
           <span className="sr-only">Eye-to-screen distance</span>
           <NumberField
-            value={distanceIn}
+            value={nominalDistanceIn}
             onCommit={(v) => v !== null && onDistance(v)}
             parse={(disp) => toInches(disp, unit)}
             format={(inches) => String(roundToUnit(inches, unit))}
@@ -602,60 +621,160 @@ export default function MonitorSimulator({ simulator, setSimulator, unit, theme 
   const geo = resolveSelection(simulator.selection) ?? resolveSelection(DEFAULT_SIMULATOR.selection)!
   const { widthIn, heightIn } = physical(geo)
 
-  // Head angle (yaw) and pitch are ephemeral local state — never persisted to
-  // localStorage or the URL — so they start centered on every load and turning
-  // the head only re-renders this view, never the whole app or its storage.
+  // Yaw, pitch and the *actual* eye distance are ephemeral local state — never
+  // persisted. The nominal distance (the input-field value) is the persisted one
+  // (simulator.distanceIn); the actual distance is what the keyboard nudges and
+  // what the camera uses, easing to the nominal whenever the nominal changes.
   const [headAngle, setHeadAngle] = useState(0)
   const [pitch, setPitch] = useState(0)
+  const [actualDistance, setActualDistance] = useState(simulator.distanceIn)
   const centered = headAngle === 0 && pitch === 0
-  // Latest distance, read inside the keydown handler without re-subscribing it.
-  const distRef = useRef(simulator.distanceIn)
-  distRef.current = simulator.distanceIn
+
+  // Live mirrors (read inside once-registered handlers / rAF ticks) plus "goal"
+  // values that integer stepping advances from, so repeated presses reliably go
+  // 1 → 2 → 3 even mid-animation.
+  const yawRef = useRef(0)
+  yawRef.current = headAngle
+  const pitchRef = useRef(0)
+  pitchRef.current = pitch
+  const actualRef = useRef(actualDistance)
+  actualRef.current = actualDistance
+  const yawGoalRef = useRef(0)
+  const distGoalRef = useRef(simulator.distanceIn)
+
+  const headAnimRef = useRef<number | null>(null)
+  const distAnimRef = useRef<number | null>(null)
+  const cancelHead = useCallback(() => {
+    if (headAnimRef.current !== null) {
+      cancelAnimationFrame(headAnimRef.current)
+      headAnimRef.current = null
+    }
+  }, [])
+  const cancelDist = useCallback(() => {
+    if (distAnimRef.current !== null) {
+      cancelAnimationFrame(distAnimRef.current)
+      distAnimRef.current = null
+    }
+  }, [])
+  useEffect(() => () => {
+    cancelHead()
+    cancelDist()
+  }, [cancelHead, cancelDist])
+
+  // Ease yaw + pitch to a target. Yaw-key steps keep the current pitch; the
+  // recenter button targets (0, 0).
+  const tweenHead = useCallback(
+    (toYaw: number, toPitch: number, duration: number) => {
+      cancelHead()
+      yawGoalRef.current = toYaw
+      const fromYaw = yawRef.current
+      const fromPitch = pitchRef.current
+      if (fromYaw === toYaw && fromPitch === toPitch) return
+      let start: number | null = null
+      const tick = (now: number) => {
+        if (start === null) start = now
+        const t = Math.min(1, (now - start) / duration)
+        const e = easeInOut(t)
+        setHeadAngle(fromYaw + (toYaw - fromYaw) * e)
+        setPitch(fromPitch + (toPitch - fromPitch) * e)
+        if (t < 1) headAnimRef.current = requestAnimationFrame(tick)
+        else {
+          headAnimRef.current = null
+          setHeadAngle(toYaw)
+          setPitch(toPitch)
+        }
+      }
+      headAnimRef.current = requestAnimationFrame(tick)
+    },
+    [cancelHead],
+  )
+
+  // Ease the actual eye distance to a target (ephemeral — never written to the store).
+  const tweenDist = useCallback(
+    (to: number, duration: number) => {
+      cancelDist()
+      distGoalRef.current = to
+      const from = actualRef.current
+      if (from === to) {
+        setActualDistance(to)
+        return
+      }
+      let start: number | null = null
+      const tick = (now: number) => {
+        if (start === null) start = now
+        const t = Math.min(1, (now - start) / duration)
+        setActualDistance(from + (to - from) * easeInOut(t))
+        if (t < 1) distAnimRef.current = requestAnimationFrame(tick)
+        else {
+          distAnimRef.current = null
+          setActualDistance(to)
+        }
+      }
+      distAnimRef.current = requestAnimationFrame(tick)
+    },
+    [cancelDist],
+  )
+
+  // When the nominal (input) distance changes, ease the actual distance to it.
+  useEffect(() => {
+    tweenDist(simulator.distanceIn, RECENTER_MS)
+  }, [simulator.distanceIn, tweenDist])
 
   // Dragging the 3D view moves the *monitor*: pull it right and it follows, so the
   // camera turns left; pull it down and it follows, so you look up. Both deltas are
   // inverted relative to the gaze (horizontal is opposite the top view's drag).
   const onPointerDown = (e: React.PointerEvent) => {
+    cancelHead()
     dragRef.current = { startX: e.clientX, startY: e.clientY, startAngle: headAngle, startPitch: pitch }
     ;(e.target as Element).setPointerCapture?.(e.pointerId)
   }
   const onPointerMove = (e: React.PointerEvent) => {
     const d = dragRef.current
     if (!d) return
-    const nextAngle = d.startAngle - (e.clientX - d.startX) * HEAD_DRAG_SENS
-    const nextPitch = d.startPitch + (e.clientY - d.startY) * HEAD_DRAG_SENS
-    setHeadAngle(clamp(nextAngle, -SIMULATOR_HEAD_ANGLE_MAX, SIMULATOR_HEAD_ANGLE_MAX))
-    setPitch(clamp(nextPitch, -SIMULATOR_PITCH_MAX, SIMULATOR_PITCH_MAX))
+    const nextAngle = clamp(
+      d.startAngle - (e.clientX - d.startX) * HEAD_DRAG_SENS,
+      -SIMULATOR_HEAD_ANGLE_MAX,
+      SIMULATOR_HEAD_ANGLE_MAX,
+    )
+    const nextPitch = clamp(
+      d.startPitch + (e.clientY - d.startY) * HEAD_DRAG_SENS,
+      -SIMULATOR_PITCH_MAX,
+      SIMULATOR_PITCH_MAX,
+    )
+    yawGoalRef.current = nextAngle
+    setHeadAngle(nextAngle)
+    setPitch(nextPitch)
   }
   const endDrag = () => {
     dragRef.current = null
   }
-  const recenter = () => {
-    setHeadAngle(0)
-    setPitch(0)
-  }
+  const recenter = () => tweenHead(0, 0, RECENTER_MS)
 
-  // Arrow keys drive the view (ignored while a form field is focused):
-  //   ←/→ turn the head (right = +), ↑/↓ move closer/farther (↑ = closer).
+  // Arrow keys, ignored while a form field is focused. ←/→ turn the head; ↑/↓
+  // move the actual distance closer/farther. Each press eases to the next integer.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const tag = document.activeElement?.tagName
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         e.preventDefault()
-        const step = (e.shiftKey ? 10 : HEAD_KEY_STEP) * (e.key === 'ArrowRight' ? 1 : -1)
-        setHeadAngle((a) => clamp(a + step, -SIMULATOR_HEAD_ANGLE_MAX, SIMULATOR_HEAD_ANGLE_MAX))
+        const cur = yawGoalRef.current
+        const target = e.key === 'ArrowRight' ? Math.floor(cur + EPS) + 1 : Math.ceil(cur - EPS) - 1
+        tweenHead(
+          clamp(target, -SIMULATOR_HEAD_ANGLE_MAX, SIMULATOR_HEAD_ANGLE_MAX),
+          pitchRef.current,
+          KEY_ANIM_MS,
+        )
       } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
         e.preventDefault()
-        const step = (e.shiftKey ? 5 : DIST_KEY_STEP) * (e.key === 'ArrowUp' ? -1 : 1)
-        const next = clamp(distRef.current + step, SIMULATOR_DISTANCE_MIN_IN, SIMULATOR_DISTANCE_MAX_IN)
-        distRef.current = next // update now so rapid presses accumulate before re-render
-        setSimulator({ distanceIn: next })
+        const cur = distGoalRef.current
+        const target = e.key === 'ArrowUp' ? Math.ceil(cur - EPS) - 1 : Math.floor(cur + EPS) + 1
+        tweenDist(clamp(target, SIMULATOR_DISTANCE_MIN_IN, SIMULATOR_DISTANCE_MAX_IN), KEY_ANIM_MS)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [setSimulator])
+  }, [tweenHead, tweenDist])
 
   return (
     <section>
@@ -693,7 +812,7 @@ export default function MonitorSimulator({ simulator, setSimulator, unit, theme 
           curveRadius={geo.curveRadius}
           resWidth={geo.resWidth}
           resHeight={geo.resHeight}
-          distanceIn={simulator.distanceIn}
+          distanceIn={actualDistance}
           headAngle={headAngle}
           pitch={pitch}
           dark={theme === 'dark'}
@@ -735,11 +854,16 @@ export default function MonitorSimulator({ simulator, setSimulator, unit, theme 
         <TopDown
           widthIn={widthIn}
           curveRadius={geo.curveRadius}
-          distanceIn={simulator.distanceIn}
+          distanceIn={actualDistance}
+          nominalDistanceIn={simulator.distanceIn}
           headAngle={headAngle}
           unit={unit}
           onDistance={(inches) => setSimulator({ distanceIn: inches })}
-          onRotate={setHeadAngle}
+          onRotate={(deg) => {
+            cancelHead()
+            yawGoalRef.current = deg
+            setHeadAngle(deg)
+          }}
         />
         <p className="text-xs text-[var(--text-muted)]">
           <kbd>←</kbd> <kbd>→</kbd> turn your head · <kbd>↑</kbd> <kbd>↓</kbd> move closer / farther
