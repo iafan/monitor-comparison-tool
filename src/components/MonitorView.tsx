@@ -37,11 +37,11 @@ const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n
 const MAX_TEX = 4096
 
 // ── Screen content texture ────────────────────────────────────────────────────
-// A faux desktop drawn to a canvas at the panel's TRUE pixel resolution, so
-// everything is sized in real device pixels: the windows (800×600 and 1440×900)
-// and the taskbar icons occupy the same fraction of the panel a real window would,
-// making pixel density visible — a window looks tiny on a dense 4K panel and large
-// on a 1440p one. No external asset is fetched.
+// A faux macOS desktop drawn to a canvas at the panel's TRUE pixel resolution, so
+// everything is sized in real device pixels: the windows (800×600 and 1440×900),
+// the 24px menu bar, and the Dock icons occupy the same fraction of the panel a
+// real one would — making pixel density visible (a window looks tiny on a dense 4K
+// panel and large on a 1440p one). No external asset is fetched.
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   const rad = Math.min(r, w / 2, h / 2)
@@ -55,13 +55,16 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
 }
 
 // Coordinates below are all in true device pixels.
-const TASKBAR_H = 48
-const TITLE_H = 40
-const ICON = 40
-const ICON_GAP = 14
+const MENUBAR_H = 24 // macOS menu bar: 24 pt = 24px at 1x (verified against Apple's spec)
+const TITLE_H = 40 // faux window title bar
+const DOCK_ICON = 56
+const DOCK_GAP = 14
+const DOCK_PAD = 12 // padding between the Dock's icons and the panel edge
+const DOCK_MARGIN = 16 // gap from the Dock panel to the screen's bottom edge
+const INK = 'rgba(29,29,31,0.9)' // menu-bar foreground
 
-/** A macOS/Windows-ish window with a title bar and its pixel size printed at 60px. */
-function drawWindow(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, accent: string) {
+/** A macOS-ish window with a gray title bar and its pixel size printed at 60px. */
+function drawWindow(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
   // Soft drop shadow on all sides, so an overlapping window casts a visible
   // penumbra on the one beneath and their boundaries stay legible. Painted with
   // the body fill, then reset so the title bar and text below stay crisp.
@@ -78,8 +81,10 @@ function drawWindow(ctx: CanvasRenderingContext2D, x: number, y: number, w: numb
   ctx.save()
   roundRect(ctx, x, y, w, h, 14)
   ctx.clip()
-  ctx.fillStyle = accent
+  ctx.fillStyle = '#c9ced7' // gray title bar
   ctx.fillRect(x, y, w, TITLE_H)
+  ctx.fillStyle = 'rgba(0,0,0,0.1)' // hairline under the title bar
+  ctx.fillRect(x, y + TITLE_H - 1, w, 1)
   ctx.restore()
 
   const dot = (cx: number, color: string) => {
@@ -101,6 +106,118 @@ function drawWindow(ctx: CanvasRenderingContext2D, x: number, y: number, w: numb
   ctx.textBaseline = 'alphabetic'
 }
 
+/** The menu's leading mark — a plain solid dot, centered on (cx, cy). */
+function drawMenuLogo(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number) {
+  ctx.fillStyle = INK
+  ctx.beginPath()
+  ctx.arc(cx, cy, r, 0, Math.PI * 2)
+  ctx.fill()
+}
+
+/** Menu-bar status glyphs, each anchored by its right edge at `rx`, centered on `cy`. */
+function drawSearch(ctx: CanvasRenderingContext2D, rx: number, cy: number) {
+  const r = 5
+  const cx = rx - 7
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 1.6
+  ctx.beginPath(); ctx.arc(cx, cy - 1, r, 0, Math.PI * 2); ctx.stroke()
+  ctx.beginPath(); ctx.moveTo(cx + 4, cy + 3); ctx.lineTo(cx + 7, cy + 6); ctx.stroke()
+}
+function drawWifi(ctx: CanvasRenderingContext2D, rx: number, cy: number) {
+  const cx = rx - 9
+  const baseY = cy + 4.5 // apex dot; the 9px-tall fan above it centers on cy
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 1.6
+  for (const r of [9, 6, 3]) {
+    ctx.beginPath(); ctx.arc(cx, baseY, r, Math.PI * 1.25, Math.PI * 1.75); ctx.stroke()
+  }
+  ctx.fillStyle = INK
+  ctx.beginPath(); ctx.arc(cx, baseY, 1.3, 0, Math.PI * 2); ctx.fill()
+}
+function drawBattery(ctx: CanvasRenderingContext2D, rx: number, cy: number) {
+  const w = 25
+  const h = 12
+  const x = rx - w
+  const y = cy - h / 2
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 1.4
+  roundRect(ctx, x, y, w, h, 3); ctx.stroke()
+  ctx.fillStyle = INK
+  ctx.fillRect(x + w + 1.5, y + h * 0.3, 2, h * 0.4) // terminal nub
+  roundRect(ctx, x + 2, y + 2, (w - 4) * 0.7, h - 4, 1.5); ctx.fill() // charge level
+}
+
+/** The translucent menu bar: Apple + app menus on the left, status icons + clock on the right. */
+function drawMenuBar(ctx: CanvasRenderingContext2D, W: number) {
+  ctx.fillStyle = 'rgba(248,249,251,0.62)'
+  ctx.fillRect(0, 0, W, MENUBAR_H)
+  ctx.fillStyle = 'rgba(0,0,0,0.08)'
+  ctx.fillRect(0, MENUBAR_H - 1, W, 1) // hairline separator
+
+  const cy = MENUBAR_H / 2
+  ctx.textBaseline = 'middle'
+  ctx.fillStyle = INK
+
+  let x = 16
+  drawMenuLogo(ctx, x, cy, 6)
+  x += 20
+  ctx.textAlign = 'left'
+  ctx.font = 'bold 15px sans-serif'
+  ctx.fillText('Monitorture', x, cy + 0.5)
+  x += ctx.measureText('Monitorture').width + 18
+  ctx.font = '15px sans-serif'
+  for (const item of ['File', 'Edit', 'View', 'Go', 'Window', 'Help']) {
+    ctx.fillText(item, x, cy + 0.5)
+    x += ctx.measureText(item).width + 16
+  }
+
+  let rx = W - 16
+  ctx.textAlign = 'right'
+  ctx.font = '15px sans-serif'
+  const clock = 'Mon 12:00'
+  ctx.fillText(clock, rx, cy + 0.5)
+  rx -= ctx.measureText(clock).width + 18
+  drawBattery(ctx, rx, cy); rx -= 34
+  drawWifi(ctx, rx, cy); rx -= 26
+  drawSearch(ctx, rx, cy)
+
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'alphabetic'
+}
+
+/** The Dock: rounded squircle icons centered on a translucent white panel that hugs them. */
+function drawDock(ctx: CanvasRenderingContext2D, W: number, H: number) {
+  const icons = ['#5eb0f7', '#34c759', '#ff9f0a', '#ff375f', '#af52de', '#ff2d55', '#64d2ff', '#30d158']
+  const iconsW = icons.length * DOCK_ICON + (icons.length - 1) * DOCK_GAP
+  const panelW = iconsW + 2 * DOCK_PAD
+  const panelH = DOCK_ICON + 2 * DOCK_PAD
+  const panelX = (W - panelW) / 2
+  const panelY = H - DOCK_MARGIN - panelH
+  const radius = panelH * 0.28
+
+  ctx.save()
+  ctx.shadowColor = 'rgba(0,0,0,0.35)'
+  ctx.shadowBlur = 30
+  ctx.shadowOffsetY = 10
+  ctx.fillStyle = 'rgba(255,255,255,0.3)'
+  roundRect(ctx, panelX, panelY, panelW, panelH, radius)
+  ctx.fill()
+  ctx.restore()
+  ctx.strokeStyle = 'rgba(255,255,255,0.45)'
+  ctx.lineWidth = 1
+  roundRect(ctx, panelX + 0.5, panelY + 0.5, panelW - 1, panelH - 1, radius)
+  ctx.stroke()
+
+  let x = panelX + DOCK_PAD
+  const y = panelY + DOCK_PAD
+  for (const color of icons) {
+    ctx.fillStyle = color
+    roundRect(ctx, x, y, DOCK_ICON, DOCK_ICON, DOCK_ICON * 0.24)
+    ctx.fill()
+    x += DOCK_ICON + DOCK_GAP
+  }
+}
+
 function drawDesktop(ctx: CanvasRenderingContext2D, W: number, H: number) {
   const bg = ctx.createLinearGradient(0, 0, W, H)
   bg.addColorStop(0, '#0e7490')
@@ -119,31 +236,16 @@ function drawDesktop(ctx: CanvasRenderingContext2D, W: number, H: number) {
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke()
   }
 
-  // Two windows at real pixel sizes, vertically centered in the desktop area.
-  const area = H - TASKBAR_H
-  const win1 = { w: 800, h: 600 }
-  const win2 = { w: 1440, h: 900 }
-  drawWindow(ctx, Math.round(W * 0.1), Math.round((area - win1.h) / 2), win1.w, win1.h, '#2563eb')
-  drawWindow(ctx, Math.round(W - win2.w - W * 0.08), Math.round((area - win2.h) / 2), win2.w, win2.h, '#7c3aed')
+  // Two windows at real pixel sizes, centered in the area between menu bar and Dock.
+  const contentTop = MENUBAR_H
+  const contentBottom = H - DOCK_MARGIN - (DOCK_ICON + 2 * DOCK_PAD)
+  const centerY = (h: number) => Math.round(contentTop + (contentBottom - contentTop - h) / 2)
+  drawWindow(ctx, Math.round(W * 0.1), centerY(600), 800, 600)
+  drawWindow(ctx, Math.round(W - 1440 - W * 0.08), centerY(900), 1440, 900)
 
-  // Taskbar with true-to-size icons.
-  ctx.fillStyle = 'rgba(2,6,23,0.78)'
-  ctx.fillRect(0, H - TASKBAR_H, W, TASKBAR_H)
-  const pad = (TASKBAR_H - ICON) / 2
-  const palette = ['#38bdf8', '#34d399', '#fbbf24', '#f472b6', '#a78bfa', '#f87171', '#60a5fa', '#4ade80']
-  palette.forEach((color, i) => {
-    ctx.fillStyle = color
-    roundRect(ctx, pad + i * (ICON + ICON_GAP), H - TASKBAR_H + pad, ICON, ICON, 8)
-    ctx.fill()
-  })
-
-  ctx.fillStyle = '#e2e8f0'
-  ctx.font = '28px sans-serif'
-  ctx.textAlign = 'right'
-  ctx.textBaseline = 'middle'
-  ctx.fillText('12:00', W - 24, H - TASKBAR_H / 2)
-  ctx.textAlign = 'left'
-  ctx.textBaseline = 'alphabetic'
+  // Dock floats over the windows; the menu bar sits above everything.
+  drawDock(ctx, W, H)
+  drawMenuBar(ctx, W)
 }
 
 function useScreenTexture(resWidth: number, resHeight: number) {
