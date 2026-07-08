@@ -14,7 +14,7 @@ const TOOL_LABELS: Record<Tool, string> = {
   simulator: 'Monitor Simulator in 3D',
 }
 
-const TOOL_ORDER: Tool[] = ['comparison', 'check', 'geometry', 'simulator']
+const TOOL_ORDER: Tool[] = ['comparison', 'simulator', 'check', 'geometry']
 
 export function TopMenu({ tool, onToolChange, theme, onToggleTheme }: Props) {
   const isDark = theme === 'dark'
