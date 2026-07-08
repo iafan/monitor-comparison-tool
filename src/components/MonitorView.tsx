@@ -10,7 +10,7 @@ import {
 } from '../constants'
 import { resolveSelection } from '../data'
 import { arcPoints, physical } from '../lib/geometry'
-import { formatLength, fromInches, roundToUnit, toInches, UNIT_LABELS } from '../lib/units'
+import { fromInches, roundToUnit, toInches, UNIT_LABELS } from '../lib/units'
 import type { Unit, ViewSettings } from '../types'
 import { Intro } from './Intro'
 import { MonitorPicker } from './MonitorPicker'
@@ -19,9 +19,11 @@ import { NumberField } from './NumberField'
 // The eye's simulated field of view. Three's camera fov is vertical; we fix the
 // front-view canvas to 16:9 so the horizontal fov (what actually matters for
 // "does the whole width fit?") is stable and can be mirrored in the top view.
-const FOV_V_DEG = 50
 const ASPECT = 16 / 9
-const H_FOV_DEG = (Math.atan(Math.tan((FOV_V_DEG * Math.PI) / 360) * ASPECT) * 360) / Math.PI
+// 60° horizontal ≈ the comfortable central field of view. Three's camera fov is
+// vertical, so derive that from the target horizontal fov at our 16:9 aspect.
+const H_FOV_DEG = 60
+const FOV_V_DEG = (Math.atan(Math.tan((H_FOV_DEG * Math.PI) / 360) / ASPECT) * 360) / Math.PI
 
 // Bezel widths (inches). The bottom is a larger "chin", like a real monitor.
 const BEZEL_SIDE = 0.4
@@ -33,7 +35,8 @@ const MESH_SAMPLES = 72
 const deg2rad = (d: number) => (d * Math.PI) / 180
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n))
 const HEAD_DRAG_SENS = 0.25 // degrees of head turn per pixel dragged
-const HEAD_KEY_STEP = 3 // degrees per arrow-key press
+const HEAD_KEY_STEP = 3 // degrees per left/right arrow press
+const DIST_KEY_STEP = 1 // inches per up/down arrow press (up = closer)
 
 /** WebGL guarantees at least 4096²; cap the texture there and downscale larger panels. */
 const MAX_TEX = 4096
@@ -600,6 +603,9 @@ export default function MonitorView({ view, setView, unit, theme }: Props) {
   // URL — so it starts centered on every load and turning the head only
   // re-renders this view, never the whole app or its storage.
   const [headAngle, setHeadAngle] = useState(0)
+  // Latest distance, read inside the keydown handler without re-subscribing it.
+  const distRef = useRef(view.distanceIn)
+  distRef.current = view.distanceIn
 
   // Dragging the 3D view moves the *monitor*: pull it right and it follows, which
   // means the camera turns left — so the delta is inverted (opposite the top view).
@@ -617,20 +623,27 @@ export default function MonitorView({ view, setView, unit, theme }: Props) {
     dragRef.current = null
   }
 
-  // Left/Right arrows turn the head (right = +), except while typing in a field.
+  // Arrow keys drive the view (ignored while a form field is focused):
+  //   ←/→ turn the head (right = +), ↑/↓ move closer/farther (↑ = closer).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
       const tag = document.activeElement?.tagName
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return
-      e.preventDefault()
-      const dir = e.key === 'ArrowRight' ? 1 : -1
-      const step = (e.shiftKey ? 10 : HEAD_KEY_STEP) * dir
-      setHeadAngle((a) => clamp(a + step, -VIEW_HEAD_ANGLE_MAX, VIEW_HEAD_ANGLE_MAX))
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault()
+        const step = (e.shiftKey ? 10 : HEAD_KEY_STEP) * (e.key === 'ArrowRight' ? 1 : -1)
+        setHeadAngle((a) => clamp(a + step, -VIEW_HEAD_ANGLE_MAX, VIEW_HEAD_ANGLE_MAX))
+      } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault()
+        const step = (e.shiftKey ? 5 : DIST_KEY_STEP) * (e.key === 'ArrowUp' ? -1 : 1)
+        const next = clamp(distRef.current + step, VIEW_DISTANCE_MIN_IN, VIEW_DISTANCE_MAX_IN)
+        distRef.current = next // update now so rapid presses accumulate before re-render
+        setView({ distanceIn: next })
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }, [setView])
 
   return (
     <section>
@@ -690,8 +703,7 @@ export default function MonitorView({ view, setView, unit, theme }: Props) {
           onRotate={setHeadAngle}
         />
         <p className="text-xs text-[var(--text-muted)]">
-          Distance {formatLength(view.distanceIn, unit)} · viewing angle{' '}
-          {headAngle > 0 ? `+${headAngle}` : headAngle}°
+          <kbd>←</kbd> <kbd>→</kbd> turn your head · <kbd>↑</kbd> <kbd>↓</kbd> move closer / farther
         </p>
       </div>
     </section>
