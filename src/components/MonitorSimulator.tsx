@@ -461,7 +461,7 @@ function TopDown({
     const d = dragRef.current
     if (!d) return
     const next = d.startAngle + (e.clientX - d.startX) * HEAD_DRAG_SENS
-    onRotate(clamp(Math.round(next), -SIMULATOR_HEAD_ANGLE_MAX, SIMULATOR_HEAD_ANGLE_MAX))
+    onRotate(clamp(next, -SIMULATOR_HEAD_ANGLE_MAX, SIMULATOR_HEAD_ANGLE_MAX))
   }
   const endDrag = () => {
     dragRef.current = null
@@ -623,8 +623,8 @@ export default function MonitorSimulator({ simulator, setSimulator, unit, theme 
     if (!d) return
     const nextAngle = d.startAngle - (e.clientX - d.startX) * HEAD_DRAG_SENS
     const nextPitch = d.startPitch + (e.clientY - d.startY) * HEAD_DRAG_SENS
-    setHeadAngle(clamp(Math.round(nextAngle), -SIMULATOR_HEAD_ANGLE_MAX, SIMULATOR_HEAD_ANGLE_MAX))
-    setPitch(clamp(Math.round(nextPitch), -SIMULATOR_PITCH_MAX, SIMULATOR_PITCH_MAX))
+    setHeadAngle(clamp(nextAngle, -SIMULATOR_HEAD_ANGLE_MAX, SIMULATOR_HEAD_ANGLE_MAX))
+    setPitch(clamp(nextPitch, -SIMULATOR_PITCH_MAX, SIMULATOR_PITCH_MAX))
   }
   const endDrag = () => {
     dragRef.current = null
