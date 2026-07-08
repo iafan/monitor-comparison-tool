@@ -33,7 +33,7 @@ const PATTERNS: Pattern[] = [
   { id: 'hlines', label: 'Horizontal lines (1px)', hint: 'CSS px vs device px — left / right', lines: 'horizontal' },
   { id: 'gradient', label: 'Gradient', hint: 'Banding & bit depth — stepped vs smooth', render: 'gradient' },
   { id: 'gamma', label: 'Gamma', hint: 'Patch melts into stripes at correct gamma', render: 'gamma' },
-  { id: 'refresh', label: 'Refresh rate', hint: 'Measured Hz & frame time; watch the bar for stutter', render: 'refresh' },
+  { id: 'refresh', label: 'Refresh rate', hint: 'Measured Hz; watch the box for stutter', render: 'refresh' },
 ]
 
 // The bouncing box advances a FIXED number of pixels per frame (not per second),
@@ -218,10 +218,7 @@ function RefreshRateScreen() {
   return (
     <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-black text-white">
       <div className="text-center tabular-nums">
-        <div className="text-[9vw] leading-none font-medium">
-          {hz !== null ? snapRate(hz) : '—'}
-          <span className="text-[4vw]"> Hz</span>
-        </div>
+        <div className="text-[9vw] leading-none font-medium">{hz !== null ? `${snapRate(hz)}Hz` : '—'}</div>
         <div className="mt-[2vh] text-[2.6vw] text-white/60">
           {hz !== null ? `As measured: ${hz.toFixed(1)}Hz` : 'measuring…'}
         </div>
@@ -235,12 +232,14 @@ function RefreshRateScreen() {
   )
 }
 
-/** Static miniature for the refresh-rate tile (no measurement loop). */
+/** Static miniature of the refresh-rate screen for the tile (no measurement loop). */
 function RefreshRatePreview() {
   return (
-    <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-black">
-      <div className="absolute top-0 left-[30%] h-full w-1 bg-white/80" />
-      <span className="relative text-2xl font-bold text-white">Hz</span>
+    <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-black">
+      <span className="text-lg font-medium text-white">60Hz</span>
+      <span className="relative block h-2.5 w-20 overflow-hidden rounded-[2px] border border-white">
+        <span className="absolute top-1/2 left-[3px] h-1.5 w-1.5 -translate-y-1/2 bg-white" />
+      </span>
     </div>
   )
 }
