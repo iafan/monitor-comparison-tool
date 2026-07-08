@@ -4,10 +4,10 @@ import type {
   Monitor,
   MonitorInput,
   Preferences,
+  SimulatorSettings,
   Theme,
   Tool,
   TopViewAlign,
-  ViewSettings,
   VisibleAreaFrame,
 } from '../types'
 import { sortMonitors } from '../lib/geometry'
@@ -18,7 +18,7 @@ import {
   loadTheme,
   loadTool,
   loadTopViewAlign,
-  loadView,
+  loadSimulator,
   loadVisibleFrame,
   saveAlignment,
   saveMonitors,
@@ -26,7 +26,7 @@ import {
   saveTheme,
   saveTool,
   saveTopViewAlign,
-  saveView,
+  saveSimulator,
   saveVisibleFrame,
   uid,
 } from '../lib/storage'
@@ -51,7 +51,7 @@ function storedState(): AppState {
     preferences: loadPreferences(),
     checkScreen: null,
     visibleFrame: loadVisibleFrame(),
-    view: loadView(),
+    simulator: loadSimulator(),
   }
 }
 
@@ -91,9 +91,9 @@ export interface AppStore {
   /** Monitor Geometry visible-area frame; null = full-screen default. */
   visibleFrame: VisibleAreaFrame | null
   setVisibleFrame: (frame: VisibleAreaFrame | null) => void
-  /** 3D Viewer settings; setView patches individual fields. */
-  view: ViewSettings
-  setView: (patch: Partial<ViewSettings>) => void
+  /** Monitor Simulator settings; setSimulator patches individual fields. */
+  simulator: SimulatorSettings
+  setSimulator: (patch: Partial<SimulatorSettings>) => void
 }
 
 export function useAppState(): AppStore {
@@ -132,7 +132,7 @@ export function useAppState(): AppStore {
     saveTopViewAlign(state.topViewAlign)
     savePreferences(state.preferences)
     saveVisibleFrame(state.visibleFrame)
-    saveView(state.view)
+    saveSimulator(state.simulator)
   }, [state, monitors])
 
   // Re-hydrate when the user edits the URL by hand or navigates back/forward.
@@ -191,8 +191,9 @@ export function useAppState(): AppStore {
     [mutate],
   )
 
-  const setView = useCallback(
-    (patch: Partial<ViewSettings>) => mutate((s) => ({ ...s, view: { ...s.view, ...patch } })),
+  const setSimulator = useCallback(
+    (patch: Partial<SimulatorSettings>) =>
+      mutate((s) => ({ ...s, simulator: { ...s.simulator, ...patch } })),
     [mutate],
   )
 
@@ -239,7 +240,7 @@ export function useAppState(): AppStore {
     setCheckScreen,
     visibleFrame: state.visibleFrame,
     setVisibleFrame,
-    view: state.view,
-    setView,
+    simulator: state.simulator,
+    setSimulator,
   }
 }

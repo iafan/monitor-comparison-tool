@@ -3,14 +3,14 @@ import {
   ALIGNMENTS,
   DEFAULT_MONITORS,
   DEFAULT_PREFERENCES,
-  DEFAULT_VIEW,
+  DEFAULT_SIMULATOR,
   PREFS_KEY,
+  SIMULATOR_KEY,
   STORAGE_KEY,
   THEME_KEY,
   TOOL_KEY,
   TOPVIEW_ALIGN_KEY,
   TOPVIEW_ALIGNS,
-  VIEW_KEY,
   VISIBLE_AREA_KEY,
 } from '../constants'
 import { resolveSelection } from '../data'
@@ -18,10 +18,10 @@ import type {
   Alignment,
   Monitor,
   Preferences,
+  SimulatorSettings,
   Theme,
   Tool,
   TopViewAlign,
-  ViewSettings,
   VisibleAreaFrame,
 } from '../types'
 
@@ -86,7 +86,7 @@ export function savePreferences(prefs: Preferences): void {
 
 export function loadTool(): Tool {
   const raw = localStorage.getItem(TOOL_KEY)
-  return raw === 'comparison' || raw === 'check' || raw === 'geometry' || raw === 'view'
+  return raw === 'comparison' || raw === 'check' || raw === 'geometry' || raw === 'simulator'
     ? raw
     : 'comparison'
 }
@@ -125,26 +125,26 @@ export function saveVisibleFrame(frame: VisibleAreaFrame | null): void {
   else localStorage.removeItem(VISIBLE_AREA_KEY)
 }
 
-/** The saved 3D Viewer settings, falling back field-by-field to the defaults. */
-export function loadView(): ViewSettings {
+/** The saved Monitor Simulator settings, falling back field-by-field to the defaults. */
+export function loadSimulator(): SimulatorSettings {
   try {
-    const raw = localStorage.getItem(VIEW_KEY)
-    if (!raw) return DEFAULT_VIEW
-    const p = JSON.parse(raw) as Partial<ViewSettings>
+    const raw = localStorage.getItem(SIMULATOR_KEY)
+    if (!raw) return DEFAULT_SIMULATOR
+    const p = JSON.parse(raw) as Partial<SimulatorSettings>
     const selection =
       typeof p.selection === 'string' && resolveSelection(p.selection)
         ? p.selection
-        : DEFAULT_VIEW.selection
+        : DEFAULT_SIMULATOR.selection
     const distanceIn =
       typeof p.distanceIn === 'number' && Number.isFinite(p.distanceIn)
         ? p.distanceIn
-        : DEFAULT_VIEW.distanceIn
+        : DEFAULT_SIMULATOR.distanceIn
     return { selection, distanceIn }
   } catch {
-    return DEFAULT_VIEW
+    return DEFAULT_SIMULATOR
   }
 }
 
-export function saveView(view: ViewSettings): void {
-  localStorage.setItem(VIEW_KEY, JSON.stringify(view))
+export function saveSimulator(simulator: SimulatorSettings): void {
+  localStorage.setItem(SIMULATOR_KEY, JSON.stringify(simulator))
 }

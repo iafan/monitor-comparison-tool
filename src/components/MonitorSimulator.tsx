@@ -3,15 +3,15 @@ import { Canvas } from '@react-three/fiber'
 import { Grid, PerspectiveCamera } from '@react-three/drei'
 import * as THREE from 'three'
 import {
-  DEFAULT_VIEW,
-  VIEW_DISTANCE_MAX_IN,
-  VIEW_DISTANCE_MIN_IN,
-  VIEW_HEAD_ANGLE_MAX,
+  DEFAULT_SIMULATOR,
+  SIMULATOR_DISTANCE_MAX_IN,
+  SIMULATOR_DISTANCE_MIN_IN,
+  SIMULATOR_HEAD_ANGLE_MAX,
 } from '../constants'
 import { resolveSelection } from '../data'
 import { arcPoints, physical } from '../lib/geometry'
 import { fromInches, roundToUnit, toInches, UNIT_LABELS } from '../lib/units'
-import type { Unit, ViewSettings } from '../types'
+import type { SimulatorSettings, Unit } from '../types'
 import { Intro } from './Intro'
 import { MonitorPicker } from './MonitorPicker'
 import { NumberField } from './NumberField'
@@ -457,7 +457,7 @@ function TopDown({
     const d = dragRef.current
     if (!d) return
     const next = d.startAngle + (e.clientX - d.startX) * HEAD_DRAG_SENS
-    onRotate(clamp(Math.round(next), -VIEW_HEAD_ANGLE_MAX, VIEW_HEAD_ANGLE_MAX))
+    onRotate(clamp(Math.round(next), -SIMULATOR_HEAD_ANGLE_MAX, SIMULATOR_HEAD_ANGLE_MAX))
   }
   const endDrag = () => {
     dragRef.current = null
@@ -567,9 +567,9 @@ function TopDown({
             onCommit={(v) => v !== null && onDistance(v)}
             parse={(disp) => toInches(disp, unit)}
             format={(inches) => String(roundToUnit(inches, unit))}
-            clamp={(inches) => clamp(inches, VIEW_DISTANCE_MIN_IN, VIEW_DISTANCE_MAX_IN)}
-            min={fromInches(VIEW_DISTANCE_MIN_IN, unit)}
-            max={fromInches(VIEW_DISTANCE_MAX_IN, unit)}
+            clamp={(inches) => clamp(inches, SIMULATOR_DISTANCE_MIN_IN, SIMULATOR_DISTANCE_MAX_IN)}
+            min={fromInches(SIMULATOR_DISTANCE_MIN_IN, unit)}
+            max={fromInches(SIMULATOR_DISTANCE_MAX_IN, unit)}
             step="any"
             inputMode="decimal"
             aria-label="Eye-to-screen distance"
@@ -583,16 +583,16 @@ function TopDown({
 }
 
 interface Props {
-  view: ViewSettings
-  setView: (patch: Partial<ViewSettings>) => void
+  simulator: SimulatorSettings
+  setSimulator: (patch: Partial<SimulatorSettings>) => void
   unit: Unit
   theme: 'light' | 'dark'
 }
 
-export default function MonitorView({ view, setView, unit, theme }: Props) {
+export default function MonitorSimulator({ simulator, setSimulator, unit, theme }: Props) {
   const dragRef = useRef<{ startX: number; startAngle: number } | null>(null)
 
-  const geo = resolveSelection(view.selection) ?? resolveSelection(DEFAULT_VIEW.selection)!
+  const geo = resolveSelection(simulator.selection) ?? resolveSelection(DEFAULT_SIMULATOR.selection)!
   const { widthIn, heightIn } = physical(geo)
 
   // Head angle is ephemeral local state — never persisted to localStorage or the
@@ -600,8 +600,8 @@ export default function MonitorView({ view, setView, unit, theme }: Props) {
   // re-renders this view, never the whole app or its storage.
   const [headAngle, setHeadAngle] = useState(0)
   // Latest distance, read inside the keydown handler without re-subscribing it.
-  const distRef = useRef(view.distanceIn)
-  distRef.current = view.distanceIn
+  const distRef = useRef(simulator.distanceIn)
+  distRef.current = simulator.distanceIn
 
   // Dragging the 3D view moves the *monitor*: pull it right and it follows, which
   // means the camera turns left — so the delta is inverted (opposite the top view).
@@ -613,7 +613,7 @@ export default function MonitorView({ view, setView, unit, theme }: Props) {
     const d = dragRef.current
     if (!d) return
     const next = d.startAngle - (e.clientX - d.startX) * HEAD_DRAG_SENS
-    setHeadAngle(clamp(Math.round(next), -VIEW_HEAD_ANGLE_MAX, VIEW_HEAD_ANGLE_MAX))
+    setHeadAngle(clamp(Math.round(next), -SIMULATOR_HEAD_ANGLE_MAX, SIMULATOR_HEAD_ANGLE_MAX))
   }
   const endDrag = () => {
     dragRef.current = null
@@ -628,18 +628,18 @@ export default function MonitorView({ view, setView, unit, theme }: Props) {
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         e.preventDefault()
         const step = (e.shiftKey ? 10 : HEAD_KEY_STEP) * (e.key === 'ArrowRight' ? 1 : -1)
-        setHeadAngle((a) => clamp(a + step, -VIEW_HEAD_ANGLE_MAX, VIEW_HEAD_ANGLE_MAX))
+        setHeadAngle((a) => clamp(a + step, -SIMULATOR_HEAD_ANGLE_MAX, SIMULATOR_HEAD_ANGLE_MAX))
       } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
         e.preventDefault()
         const step = (e.shiftKey ? 5 : DIST_KEY_STEP) * (e.key === 'ArrowUp' ? -1 : 1)
-        const next = clamp(distRef.current + step, VIEW_DISTANCE_MIN_IN, VIEW_DISTANCE_MAX_IN)
+        const next = clamp(distRef.current + step, SIMULATOR_DISTANCE_MIN_IN, SIMULATOR_DISTANCE_MAX_IN)
         distRef.current = next // update now so rapid presses accumulate before re-render
-        setView({ distanceIn: next })
+        setSimulator({ distanceIn: next })
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [setView])
+  }, [setSimulator])
 
   return (
     <section>
@@ -655,7 +655,7 @@ export default function MonitorView({ view, setView, unit, theme }: Props) {
           <span className="font-medium text-[var(--text-primary)]">Monitor</span>
           <MonitorPicker
             value={geo.modelId ?? geo.classId}
-            onChange={(id) => setView({ selection: id })}
+            onChange={(id) => setSimulator({ selection: id })}
             aria-label="Monitor"
             className="min-h-11 cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2 text-sm text-[var(--text-primary)]"
           />
@@ -677,7 +677,7 @@ export default function MonitorView({ view, setView, unit, theme }: Props) {
           curveRadius={geo.curveRadius}
           resWidth={geo.resWidth}
           resHeight={geo.resHeight}
-          distanceIn={view.distanceIn}
+          distanceIn={simulator.distanceIn}
           headAngle={headAngle}
           dark={theme === 'dark'}
         />
@@ -692,10 +692,10 @@ export default function MonitorView({ view, setView, unit, theme }: Props) {
         <TopDown
           widthIn={widthIn}
           curveRadius={geo.curveRadius}
-          distanceIn={view.distanceIn}
+          distanceIn={simulator.distanceIn}
           headAngle={headAngle}
           unit={unit}
-          onDistance={(inches) => setView({ distanceIn: inches })}
+          onDistance={(inches) => setSimulator({ distanceIn: inches })}
           onRotate={setHeadAngle}
         />
         <p className="text-xs text-[var(--text-muted)]">

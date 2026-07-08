@@ -5,9 +5,9 @@ import { MonitorCheck } from './components/MonitorCheck'
 import { MonitorGeometry } from './components/MonitorGeometry'
 import { useAppState } from './hooks/useAppState'
 
-// three.js is a heavy dependency, so the 3D Viewer (and everything it imports) is
+// three.js is a heavy dependency, so the Monitor Simulator (and everything it imports) is
 // code-split into its own chunk that only downloads when this tool is opened.
-const MonitorView = lazy(() => import('./components/MonitorView'))
+const MonitorSimulator = lazy(() => import('./components/MonitorSimulator'))
 
 export function App() {
   const app = useAppState()
@@ -35,15 +35,15 @@ export function App() {
         {app.tool === 'geometry' && (
           <MonitorGeometry visibleFrame={app.visibleFrame} setVisibleFrame={app.setVisibleFrame} />
         )}
-        {app.tool === 'view' && (
+        {app.tool === 'simulator' && (
           <Suspense
             fallback={
-              <p className="py-12 text-center text-sm text-[var(--text-muted)]">Loading 3D viewer…</p>
+              <p className="py-12 text-center text-sm text-[var(--text-muted)]">Loading simulator…</p>
             }
           >
-            <MonitorView
-              view={app.view}
-              setView={app.setView}
+            <MonitorSimulator
+              simulator={app.simulator}
+              setSimulator={app.setSimulator}
               unit={app.preferences.unit}
               theme={app.theme}
             />

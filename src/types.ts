@@ -1,13 +1,13 @@
 /** Which tool is active in the top-level tool selector. */
-export type Tool = 'comparison' | 'check' | 'geometry' | 'view'
+export type Tool = 'comparison' | 'check' | 'geometry' | 'simulator'
 
 /**
- * The 3D Viewer's shareable state: which monitor is on screen and how far the
+ * The Monitor Simulator's shareable state: which monitor is on screen and how far the
  * eye sits from it. Distance is stored canonically in inches (like the desk
  * dimensions) so a unit switch is display-only. Head angle is intentionally NOT
- * here — it's ephemeral local state in the viewer, never persisted or shared.
+ * here — it's ephemeral local state in the simulator, never persisted or shared.
  */
-export interface ViewSettings {
+export interface SimulatorSettings {
   /** Catalogue selection — a class id or a model id (see src/data). */
   selection: string
   /** Eye-to-screen distance, in inches. */

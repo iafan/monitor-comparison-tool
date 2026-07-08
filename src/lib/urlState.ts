@@ -7,8 +7,7 @@
 // ── To expose a NEW setting in the URL ────────────────────────────────────────
 //   1. Add the field to AppState (below).
 //   2. Append ONE `Setting<T>` to SETTINGS with:
-//        - `key`      a short, UNIQUE, URL-safe key (never reuse/rename an old
-//                     one — that would break existing shared links);
+//        - `key`      a short, UNIQUE, URL-safe key;
 //        - `get/set`  read it from AppState / write it into a decoded draft;
 //        - `isDefault` so default values are omitted from the URL (compact);
 //        - `encode/decode` the value ↔ a string (decode returns undefined to
@@ -20,17 +19,17 @@
 // are percent-encoded with spaces rendered as `+`; every structural delimiter
 // (`& = ; :`) is a character encodeURIComponent escapes, so names can't collide.
 // Theme is intentionally NOT serialized — it's the viewer's own preference.
-import { CHECK_SCREEN_IDS, DEFAULT_MONITORS, DEFAULT_VIEW } from '../constants'
+import { CHECK_SCREEN_IDS, DEFAULT_MONITORS, DEFAULT_SIMULATOR } from '../constants'
 import { MONITOR_MODELS, classDefaultName, getClass, resolveSelection } from '../data'
 import { uid } from './storage'
 import type {
   Alignment,
   Monitor,
   Preferences,
+  SimulatorSettings,
   Theme,
   Tool,
   TopViewAlign,
-  ViewSettings,
   VisibleAreaFrame,
 } from '../types'
 
@@ -46,8 +45,8 @@ export interface AppState {
   checkScreen: string | null
   /** Monitor Geometry visible-area frame, or null for the full-screen default. */
   visibleFrame: VisibleAreaFrame | null
-  /** 3D Viewer settings (monitor, eye distance, head angle). */
-  view: ViewSettings
+  /** Monitor Simulator settings (monitor, eye distance, head angle). */
+  simulator: SimulatorSettings
 }
 
 /** A decoded (partial) state; preferences arrive field-by-field from several keys. */
@@ -71,7 +70,7 @@ interface Setting<T> {
 }
 
 const inComparison = (s: AppState) => s.tool === 'comparison'
-const inView = (s: AppState) => s.tool === 'view'
+const inSimulator = (s: AppState) => s.tool === 'simulator'
 
 // ── Monitor list codec ────────────────────────────────────────────────────────
 // Each monitor is one token; tokens are `;`-joined. A leading `-` marks hidden.
@@ -243,32 +242,31 @@ const SETTINGS: Setting<any>[] = [
       get: (s) => s.tool,
       set: (d, v) => (d.tool = v),
       isDefault: (v) => v === 'comparison',
-      encode: (v) => (v === 'check' ? 'k' : v === 'geometry' ? 'g' : 'v'),
+      encode: (v) => (v === 'check' ? 'k' : v === 'geometry' ? 'g' : 's'),
       decode: (raw) =>
-        raw === 'k' ? 'check' : raw === 'g' ? 'geometry' : raw === 'v' ? 'view' : undefined,
+        raw === 'k' ? 'check' : raw === 'g' ? 'geometry' : raw === 's' ? 'simulator' : undefined,
     } as Setting<Tool>,
     {
-      // 3D Viewer state as one compact token: `<selection>_<distanceIn>`.
+      // Monitor Simulator state as one compact token: `<selection>_<distanceIn>`.
       // Class/model ids never contain `_`, so it's an unambiguous separator.
       // (Head angle is deliberately not serialized — it's ephemeral.)
-      key: 'v',
-      get: (s) => s.view,
-      set: (d, v) => (d.view = v),
+      key: 'sim',
+      get: (s) => s.simulator,
+      set: (d, v) => (d.simulator = v),
       isDefault: (v) =>
-        v.selection === DEFAULT_VIEW.selection && v.distanceIn === DEFAULT_VIEW.distanceIn,
+        v.selection === DEFAULT_SIMULATOR.selection && v.distanceIn === DEFAULT_SIMULATOR.distanceIn,
       encode: (v) => `${v.selection}_${v.distanceIn}`,
       decode: (raw) => {
-        // Tolerate a trailing legacy head-angle segment from older links.
         const parts = raw.split('_')
-        if (parts.length < 2) return undefined
+        if (parts.length !== 2) return undefined
         const [selection, distStr] = parts
         if (!resolveSelection(selection)) return undefined
         const distanceIn = Number(distStr)
         if (!Number.isFinite(distanceIn)) return undefined
         return { selection, distanceIn }
       },
-      relevant: inView,
-    } as Setting<ViewSettings>,
+      relevant: inSimulator,
+    } as Setting<SimulatorSettings>,
     {
       key: 'tv',
       get: (s) => s.topViewAlign,
@@ -326,7 +324,7 @@ export function applyDecoded(base: AppState, d: Decoded): AppState {
     topViewAlign: d.topViewAlign ?? base.topViewAlign,
     checkScreen: d.checkScreen ?? base.checkScreen,
     visibleFrame: d.visibleFrame ?? base.visibleFrame,
-    view: d.view ?? base.view,
+    simulator: d.simulator ?? base.simulator,
     preferences: { ...base.preferences, ...d.preferences },
   }
 }
