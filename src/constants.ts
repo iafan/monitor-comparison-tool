@@ -23,7 +23,8 @@ export const DEFAULT_SIMULATOR: SimulatorSettings = {
 /** Bounds for the Monitor Simulator's inputs (inches / degrees). */
 export const SIMULATOR_DISTANCE_MIN_IN = 8
 export const SIMULATOR_DISTANCE_MAX_IN = 60
-export const SIMULATOR_HEAD_ANGLE_MAX = 75
+export const SIMULATOR_HEAD_ANGLE_MAX = 75 // horizontal head turn (yaw)
+export const SIMULATOR_PITCH_MAX = 30 // vertical head tilt (look up/down)
 
 /** Valid Monitor Check screen ids (mirrors PATTERNS in MonitorCheck); used to validate the URL `scr` value. */
 export const CHECK_SCREEN_IDS = [

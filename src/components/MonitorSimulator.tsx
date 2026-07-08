@@ -7,6 +7,7 @@ import {
   SIMULATOR_DISTANCE_MAX_IN,
   SIMULATOR_DISTANCE_MIN_IN,
   SIMULATOR_HEAD_ANGLE_MAX,
+  SIMULATOR_PITCH_MAX,
 } from '../constants'
 import { resolveSelection } from '../data'
 import { arcPoints, physical } from '../lib/geometry'
@@ -377,6 +378,7 @@ function FrontView({
   resHeight,
   distanceIn,
   headAngle,
+  pitch,
   dark,
 }: {
   widthIn: number
@@ -386,6 +388,7 @@ function FrontView({
   resHeight: number
   distanceIn: number
   headAngle: number
+  pitch: number
   dark: boolean
 }) {
   const texture = useScreenTexture(resWidth, resHeight)
@@ -395,14 +398,15 @@ function FrontView({
   return (
     <Canvas dpr={[1, 2]} gl={{ antialias: true }} frameloop="demand">
       <color attach="background" args={[bg]} />
-      {/* Eye at +z looking toward the screen; head turn is a yaw about the eye. */}
+      {/* Eye at +z looking toward the screen. Head turn is a yaw about the eye
+          (Y) plus a pitch about X; YXZ order keeps the horizon level. */}
       <PerspectiveCamera
         makeDefault
         fov={FOV_V_DEG}
         near={0.1}
         far={5000}
         position={[0, 0, distanceIn]}
-        rotation={[0, -deg2rad(headAngle), 0]}
+        rotation={[deg2rad(pitch), -deg2rad(headAngle), 0, 'YXZ']}
       />
       <ScreenMesh widthIn={widthIn} heightIn={heightIn} curveRadius={curveRadius} texture={texture} />
       <Grid
@@ -590,33 +594,44 @@ interface Props {
 }
 
 export default function MonitorSimulator({ simulator, setSimulator, unit, theme }: Props) {
-  const dragRef = useRef<{ startX: number; startAngle: number } | null>(null)
+  const dragRef = useRef<{ startX: number; startY: number; startAngle: number; startPitch: number } | null>(
+    null,
+  )
 
   const geo = resolveSelection(simulator.selection) ?? resolveSelection(DEFAULT_SIMULATOR.selection)!
   const { widthIn, heightIn } = physical(geo)
 
-  // Head angle is ephemeral local state — never persisted to localStorage or the
-  // URL — so it starts centered on every load and turning the head only
-  // re-renders this view, never the whole app or its storage.
+  // Head angle (yaw) and pitch are ephemeral local state — never persisted to
+  // localStorage or the URL — so they start centered on every load and turning
+  // the head only re-renders this view, never the whole app or its storage.
   const [headAngle, setHeadAngle] = useState(0)
+  const [pitch, setPitch] = useState(0)
+  const centered = headAngle === 0 && pitch === 0
   // Latest distance, read inside the keydown handler without re-subscribing it.
   const distRef = useRef(simulator.distanceIn)
   distRef.current = simulator.distanceIn
 
-  // Dragging the 3D view moves the *monitor*: pull it right and it follows, which
-  // means the camera turns left — so the delta is inverted (opposite the top view).
+  // Dragging the 3D view moves the *monitor*: pull it right and it follows, so the
+  // camera turns left; pull it down and it follows, so you look up. Both deltas are
+  // inverted relative to the gaze (horizontal is opposite the top view's drag).
   const onPointerDown = (e: React.PointerEvent) => {
-    dragRef.current = { startX: e.clientX, startAngle: headAngle }
+    dragRef.current = { startX: e.clientX, startY: e.clientY, startAngle: headAngle, startPitch: pitch }
     ;(e.target as Element).setPointerCapture?.(e.pointerId)
   }
   const onPointerMove = (e: React.PointerEvent) => {
     const d = dragRef.current
     if (!d) return
-    const next = d.startAngle - (e.clientX - d.startX) * HEAD_DRAG_SENS
-    setHeadAngle(clamp(Math.round(next), -SIMULATOR_HEAD_ANGLE_MAX, SIMULATOR_HEAD_ANGLE_MAX))
+    const nextAngle = d.startAngle - (e.clientX - d.startX) * HEAD_DRAG_SENS
+    const nextPitch = d.startPitch + (e.clientY - d.startY) * HEAD_DRAG_SENS
+    setHeadAngle(clamp(Math.round(nextAngle), -SIMULATOR_HEAD_ANGLE_MAX, SIMULATOR_HEAD_ANGLE_MAX))
+    setPitch(clamp(Math.round(nextPitch), -SIMULATOR_PITCH_MAX, SIMULATOR_PITCH_MAX))
   }
   const endDrag = () => {
     dragRef.current = null
+  }
+  const recenter = () => {
+    setHeadAngle(0)
+    setPitch(0)
   }
 
   // Arrow keys drive the view (ignored while a form field is focused):
@@ -664,7 +679,7 @@ export default function MonitorSimulator({ simulator, setSimulator, unit, theme 
 
       {/* First-person 3D view. Fixed 16:9 so the horizontal FOV is stable. */}
       <div
-        className="relative aspect-video w-full cursor-ew-resize touch-none overflow-hidden rounded-xl border border-[var(--border)] select-none"
+        className="relative aspect-video w-full cursor-grab touch-none overflow-hidden rounded-xl border border-[var(--border)] select-none active:cursor-grabbing"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
@@ -679,11 +694,38 @@ export default function MonitorSimulator({ simulator, setSimulator, unit, theme 
           resHeight={geo.resHeight}
           distanceIn={simulator.distanceIn}
           headAngle={headAngle}
+          pitch={pitch}
           dark={theme === 'dark'}
         />
         <div className="pointer-events-none absolute top-2 left-2 rounded-md bg-black/55 px-2 py-1 text-xs text-white">
           {geo.name}
         </div>
+        {/* Recenter control — shown only when the view is off-center. */}
+        {!centered && (
+          <button
+            type="button"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={recenter}
+            title="Center the view on the screen"
+            className="absolute right-2 bottom-2 flex cursor-pointer items-center gap-1.5 rounded-md bg-black/55 px-2 py-1 text-xs text-white hover:bg-black/70"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="size-3.5"
+              aria-hidden="true"
+            >
+              <rect width="18" height="18" x="3" y="3" rx="2" />
+              <path d="M3 12h18" />
+              <path d="M12 3v18" />
+            </svg>
+            Center
+          </button>
+        )}
       </div>
 
       {/* Top-down projection — also the primary head-turn control. */}
