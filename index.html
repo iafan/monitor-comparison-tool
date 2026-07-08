@@ -3,6 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- Apply a saved light/dark choice before first paint so the themed
+         background shows instantly, with no flash of the wrong theme while the
+         app loads. No stored choice → the CSS prefers-color-scheme query wins. -->
+    <script>
+      try {
+        var t = localStorage.getItem('monitor-comparison:theme:v1')
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t
+      } catch (e) {}
+    </script>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-NG529HTHZZ"></script>
     <script>
