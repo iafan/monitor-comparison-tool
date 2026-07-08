@@ -248,25 +248,24 @@ const SETTINGS: Setting<any>[] = [
         raw === 'k' ? 'check' : raw === 'g' ? 'geometry' : raw === 'v' ? 'view' : undefined,
     } as Setting<Tool>,
     {
-      // 3D Viewer state as one compact token: `<selection>_<distanceIn>_<headAngle>`.
+      // 3D Viewer state as one compact token: `<selection>_<distanceIn>`.
       // Class/model ids never contain `_`, so it's an unambiguous separator.
+      // (Head angle is deliberately not serialized — it's ephemeral.)
       key: 'v',
       get: (s) => s.view,
       set: (d, v) => (d.view = v),
       isDefault: (v) =>
-        v.selection === DEFAULT_VIEW.selection &&
-        v.distanceIn === DEFAULT_VIEW.distanceIn &&
-        v.headAngle === DEFAULT_VIEW.headAngle,
-      encode: (v) => `${v.selection}_${v.distanceIn}_${v.headAngle}`,
+        v.selection === DEFAULT_VIEW.selection && v.distanceIn === DEFAULT_VIEW.distanceIn,
+      encode: (v) => `${v.selection}_${v.distanceIn}`,
       decode: (raw) => {
+        // Tolerate a trailing legacy head-angle segment from older links.
         const parts = raw.split('_')
-        if (parts.length !== 3) return undefined
-        const [selection, distStr, angStr] = parts
+        if (parts.length < 2) return undefined
+        const [selection, distStr] = parts
         if (!resolveSelection(selection)) return undefined
         const distanceIn = Number(distStr)
-        const headAngle = Number(angStr)
-        if (!Number.isFinite(distanceIn) || !Number.isFinite(headAngle)) return undefined
-        return { selection, distanceIn, headAngle }
+        if (!Number.isFinite(distanceIn)) return undefined
+        return { selection, distanceIn }
       },
       relevant: inView,
     } as Setting<ViewSettings>,

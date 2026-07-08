@@ -13,12 +13,11 @@ export const COLOR_SLOTS = 8
 
 /**
  * 3D Viewer defaults: a 34" 1800R ultrawide (curvature is the interesting case),
- * eyes ~60 cm from the screen, head facing straight ahead.
+ * eyes ~60 cm from the screen. (Head angle isn't persisted — it starts centered.)
  */
 export const DEFAULT_VIEW: ViewSettings = {
   selection: '34-3440x1440-1800r',
   distanceIn: 23.6,
-  headAngle: 0,
 }
 
 /** Bounds for the 3D Viewer's inputs (inches / degrees). */

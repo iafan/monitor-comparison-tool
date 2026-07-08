@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { Grid, PerspectiveCamera } from '@react-three/drei'
 import * as THREE from 'three'
@@ -220,7 +220,7 @@ function FrontView({
   const texture = useScreenTexture(resWidth, resHeight)
   const bg = dark ? '#0c0c0e' : '#dfe3ea'
   return (
-    <Canvas dpr={[1, 2]} gl={{ antialias: true }}>
+    <Canvas dpr={[1, 2]} gl={{ antialias: true }} frameloop="demand">
       <color attach="background" args={[bg]} />
       {/* Eye at +z looking toward the screen; head turn is a yaw about the eye. */}
       <PerspectiveCamera
@@ -403,15 +403,20 @@ export default function MonitorView({ view, setView, unit, theme }: Props) {
   const geo = resolveSelection(view.selection) ?? resolveSelection(DEFAULT_VIEW.selection)!
   const { widthIn, heightIn } = physical(geo)
 
+  // Head angle is ephemeral local state — never persisted to localStorage or the
+  // URL — so it starts centered on every load and a drag/slider scrub only
+  // re-renders this view, never the whole app or its storage.
+  const [headAngle, setHeadAngle] = useState(0)
+
   const onPointerDown = (e: React.PointerEvent) => {
-    dragRef.current = { startX: e.clientX, startAngle: view.headAngle }
+    dragRef.current = { startX: e.clientX, startAngle: headAngle }
     ;(e.target as Element).setPointerCapture?.(e.pointerId)
   }
   const onPointerMove = (e: React.PointerEvent) => {
     const d = dragRef.current
     if (!d) return
     const next = clamp(d.startAngle + (e.clientX - d.startX) * 0.25, -VIEW_HEAD_ANGLE_MAX, VIEW_HEAD_ANGLE_MAX)
-    setView({ headAngle: Math.round(next) })
+    setHeadAngle(Math.round(next))
   }
   const endDrag = () => {
     dragRef.current = null
@@ -454,7 +459,7 @@ export default function MonitorView({ view, setView, unit, theme }: Props) {
           resWidth={geo.resWidth}
           resHeight={geo.resHeight}
           distanceIn={view.distanceIn}
-          headAngle={view.headAngle}
+          headAngle={headAngle}
           dark={theme === 'dark'}
         />
         <div className="pointer-events-none absolute top-2 left-2 rounded-md bg-black/55 px-2 py-1 text-xs text-white">
@@ -470,17 +475,17 @@ export default function MonitorView({ view, setView, unit, theme }: Props) {
           min={-VIEW_HEAD_ANGLE_MAX}
           max={VIEW_HEAD_ANGLE_MAX}
           step={1}
-          value={view.headAngle}
-          onChange={(e) => setView({ headAngle: Number(e.target.value) })}
+          value={headAngle}
+          onChange={(e) => setHeadAngle(Number(e.target.value))}
           className="h-2 flex-1 cursor-pointer accent-[var(--series-1)]"
           aria-label="Head angle in degrees"
         />
         <span className="w-14 text-right text-sm tabular-nums text-[var(--text-secondary)]">
-          {view.headAngle > 0 ? `+${view.headAngle}` : view.headAngle}°
+          {headAngle > 0 ? `+${headAngle}` : headAngle}°
         </span>
         <button
           type="button"
-          onClick={() => setView({ headAngle: 0 })}
+          onClick={() => setHeadAngle(0)}
           className="cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-3 py-1.5 text-sm text-[var(--text-secondary)]"
         >
           Center
@@ -494,13 +499,13 @@ export default function MonitorView({ view, setView, unit, theme }: Props) {
           widthIn={widthIn}
           curveRadius={geo.curveRadius}
           distanceIn={view.distanceIn}
-          headAngle={view.headAngle}
+          headAngle={headAngle}
           unit={unit}
           onDistance={(inches) => setView({ distanceIn: inches })}
         />
         <p className="text-xs text-[var(--text-muted)]">
           Distance {formatLength(view.distanceIn, unit)} · viewing angle{' '}
-          {view.headAngle > 0 ? `+${view.headAngle}` : view.headAngle}°
+          {headAngle > 0 ? `+${headAngle}` : headAngle}°
         </p>
       </div>
     </section>

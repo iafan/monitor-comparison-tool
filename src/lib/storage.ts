@@ -139,11 +139,7 @@ export function loadView(): ViewSettings {
       typeof p.distanceIn === 'number' && Number.isFinite(p.distanceIn)
         ? p.distanceIn
         : DEFAULT_VIEW.distanceIn
-    const headAngle =
-      typeof p.headAngle === 'number' && Number.isFinite(p.headAngle)
-        ? p.headAngle
-        : DEFAULT_VIEW.headAngle
-    return { selection, distanceIn, headAngle }
+    return { selection, distanceIn }
   } catch {
     return DEFAULT_VIEW
   }
