@@ -20,9 +20,12 @@ import { NumberField } from './NumberField'
 // front-view canvas to 16:9 so the horizontal fov (what actually matters for
 // "does the whole width fit?") is stable and can be mirrored in the top view.
 const ASPECT = 16 / 9
-// 60° horizontal ≈ the comfortable central field of view. Three's camera fov is
-// vertical, so derive that from the target horizontal fov at our 16:9 aspect.
-const H_FOV_DEG = 60
+// ~45° horizontal ≈ a 43mm "true normal" lens on full-frame — focal length equal
+// to the frame diagonal (2·atan(18/43.3)), the geometric definition of natural
+// human perspective. The eye position (distance) drives the actual distortion;
+// this renders that geometry at natural perspective without adding lens warp.
+// Three's camera fov is vertical, so derive it from the horizontal at our 16:9.
+const H_FOV_DEG = 45
 const FOV_V_DEG = (Math.atan(Math.tan((H_FOV_DEG * Math.PI) / 360) / ASPECT) * 360) / Math.PI
 
 // Bezel widths (inches). The bottom is a larger "chin", like a real monitor.
@@ -486,11 +489,7 @@ function TopDown({
     const right = ray(headAngle + H_FOV_DEG / 2)
     const center = ray(headAngle)
 
-    // How much of your field of view the screen actually occupies.
-    const angles = arc.map(([x, depth]) => (Math.atan2(x, distanceIn - depth) * 180) / Math.PI)
-    const spanDeg = Math.max(...angles) - Math.min(...angles)
-
-    return { screen, eye, apex, left, right, center, spanDeg }
+    return { screen, eye, apex, left, right, center }
   }, [widthIn, curveRadius, distanceIn, headAngle])
 
   return (
@@ -557,7 +556,7 @@ function TopDown({
         </text>
       </svg>
 
-      {/* Distance input, centered on the projection as requested. */}
+      {/* Distance input, centered on the projection. */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
         <label className="flex cursor-text items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-1)]/95 px-2 py-1.5 shadow-sm backdrop-blur">
           <span className="sr-only">Eye-to-screen distance</span>
@@ -576,11 +575,6 @@ function TopDown({
           />
           <span className="text-xs text-[var(--text-secondary)]">{UNIT_LABELS[unit]}</span>
         </label>
-      </div>
-
-      {/* Field-of-view readout. */}
-      <div className="absolute right-2 bottom-2 rounded-md bg-[var(--surface-1)]/90 px-2 py-1 text-xs text-[var(--text-secondary)] backdrop-blur">
-        Screen spans {Math.round(geom.spanDeg)}° of your {Math.round(H_FOV_DEG)}° view
       </div>
     </div>
   )
