@@ -2,7 +2,7 @@
 
 **Because choosing a monitor is hard.**
 
-Monitorture is a browser-based toolkit for anyone choosing, comparing, or testing computer monitors. Pick from generic monitor classes or specific real-world models, or enter your own — everything runs client-side, no install required.
+Monitorture is a browser-based app for anyone choosing, comparing, or testing computer monitors. Pick from generic monitor classes or specific real-world models, or enter your own — everything runs client-side, no install required.
 
 **Tools:**
 
@@ -11,6 +11,6 @@ Monitorture is a browser-based toolkit for anyone choosing, comparing, or testin
 - **Monitor Check** — full-screen test patterns for checking a display's pixels, uniformity, gradients, gamma, and refresh rate.
 - **Monitor Geometry** — full-screen patterns for checking edges, linearity, centering, and overscan, plus a tool to map the still-visible area of a partly-covered panel.
 
-Your setup persists locally and serializes to a shareable URL, so any view can be linked or bookmarked.
+Your setup persists locally and serializes to a shareable URL, so any view can be linked or bookmarked. Works on mobile, and can be installed as an app.
 
 **Live:** https://monitorture.com
