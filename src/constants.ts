@@ -21,6 +21,7 @@ export const CHECK_SCREEN_IDS = [
   'hlines',
   'gradient',
   'gamma',
+  'refresh',
 ] as const
 
 /** Desk defaults ~140 × 70 cm, stored in inches; monitors centered near the back. */

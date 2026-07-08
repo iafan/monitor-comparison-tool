@@ -12,7 +12,7 @@ interface Pattern {
   /** Line patterns render a split CSS-px vs device-px comparison instead. */
   lines?: Orientation
   /** Composite screens rendered by a dedicated component. */
-  render?: 'gradient' | 'gamma'
+  render?: 'gradient' | 'gamma' | 'refresh'
 }
 
 /**
@@ -33,7 +33,24 @@ const PATTERNS: Pattern[] = [
   { id: 'hlines', label: 'Horizontal lines (1px)', hint: 'CSS px vs device px — left / right', lines: 'horizontal' },
   { id: 'gradient', label: 'Gradient', hint: 'Banding & bit depth — stepped vs smooth', render: 'gradient' },
   { id: 'gamma', label: 'Gamma', hint: 'Patch melts into stripes at correct gamma', render: 'gamma' },
+  { id: 'refresh', label: 'Refresh rate', hint: 'Measured Hz & frame time; watch the bar for stutter', render: 'refresh' },
 ]
+
+// The bouncing box advances a FIXED number of pixels per frame (not per second),
+// so a faster refresh rate renders more frames/sec and the box visibly bounces
+// faster — its speed itself reveals the rate. Range is the formula-derived travel:
+//   trackWidth − 2·(border + gap) − boxWidth = 200 − 2·(1 + 1) − 20 = 176px.
+const BOUNCE_STEP = 1 // px per frame
+const BOUNCE_MAX = 176 // px of travel
+
+/** Common panel refresh rates; the measured value snaps to the nearest one when close. */
+const COMMON_RATES = [50, 60, 75, 90, 100, 120, 144, 160, 165, 175, 180, 200, 240, 360]
+
+function snapRate(hz: number): number {
+  let best = COMMON_RATES[0]
+  for (const r of COMMON_RATES) if (Math.abs(r - hz) < Math.abs(best - hz)) best = r
+  return Math.abs(best - hz) / best <= 0.06 ? best : Math.round(hz)
+}
 
 /** CSS-pixel repeating stripes: 1px black, 1px white. */
 function cssStripes(orientation: Orientation): string {
@@ -148,15 +165,98 @@ function GammaScreen() {
 }
 
 /**
+ * Live refresh-rate readout. There's no API for a panel's true Hz, so we time
+ * requestAnimationFrame (driven by the compositor's VSync): the frame interval
+ * tracks the display's refresh rate. We report the median over a rolling window
+ * (robust to hitches) and update ~4×/s so the number stays readable. The bar
+ * sweeps via CSS so it stays smooth independent of React, letting you eyeball
+ * stutter and tearing.
+ */
+function RefreshRateScreen() {
+  const [hz, setHz] = useState<number | null>(null)
+  const boxRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const deltas: number[] = []
+    let last: number | null = null
+    let lastUi = 0
+    let pos = 0
+    let dir = 1
+    let raf = requestAnimationFrame(function loop(t) {
+      if (last !== null) {
+        const dt = t - last
+        if (dt > 0 && dt < 1000) {
+          deltas.push(dt)
+          if (deltas.length > 240) deltas.shift()
+        }
+      }
+      last = t
+
+      // Advance a fixed step each frame, reversing at the ends — frame-paced, so
+      // the bounce runs faster on higher-refresh displays.
+      pos += BOUNCE_STEP * dir
+      if (pos >= BOUNCE_MAX) {
+        pos = BOUNCE_MAX
+        dir = -1
+      } else if (pos <= 0) {
+        pos = 0
+        dir = 1
+      }
+      if (boxRef.current) boxRef.current.style.transform = `translateX(${pos}px)`
+
+      if (deltas.length > 8 && t - lastUi > 250) {
+        const sorted = [...deltas].sort((a, b) => a - b)
+        const med = sorted[Math.floor(sorted.length / 2)]
+        setHz(1000 / med)
+        lastUi = t
+      }
+      raf = requestAnimationFrame(loop)
+    })
+    return () => cancelAnimationFrame(raf)
+  }, [])
+
+  return (
+    <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-black text-white">
+      <div className="text-center tabular-nums">
+        <div className="text-[9vw] leading-none font-medium">
+          {hz !== null ? snapRate(hz) : '—'}
+          <span className="text-[4vw]"> Hz</span>
+        </div>
+        <div className="mt-[2vh] text-[2.6vw] text-white/60">
+          {hz !== null ? `As measured: ${hz.toFixed(1)}Hz` : 'measuring…'}
+        </div>
+        {/* A white box bouncing inside a fixed 200px bordered track (1px gap all
+            around). Frame-paced in the rAF loop above — faster refresh, faster bounce. */}
+        <div className="relative mx-auto mt-[4vh] h-[24px] w-[200px] overflow-hidden rounded-[2px] border border-white">
+          <div ref={boxRef} className="absolute top-[1px] left-[1px] h-[20px] w-[20px] bg-white will-change-transform" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** Static miniature for the refresh-rate tile (no measurement loop). */
+function RefreshRatePreview() {
+  return (
+    <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-black">
+      <div className="absolute top-0 left-[30%] h-full w-1 bg-white/80" />
+      <span className="relative text-2xl font-bold text-white">Hz</span>
+    </div>
+  )
+}
+
+/**
  * The single renderer for a pattern, used by both the preview tile and the
  * full-screen surface — it fills whatever container it's in, so the tile is a
- * true miniature screen (no scaling), not a separate approximation.
+ * true miniature screen (no scaling), not a separate approximation. `live`
+ * enables the refresh screen's measurement loop (off for the tile grid).
  */
-function PatternContent({ pattern, showLabels }: { pattern: Pattern; showLabels: boolean }) {
+function PatternContent({ pattern, showLabels, live = false }: { pattern: Pattern; showLabels: boolean; live?: boolean }) {
   if (pattern.fill) return <div className="h-full w-full" style={{ background: pattern.fill }} />
   if (pattern.lines) return <SplitStripes orientation={pattern.lines} showLabels={showLabels} />
   if (pattern.render === 'gradient') return <GradientScreen />
   if (pattern.render === 'gamma') return <GammaScreen />
+  if (pattern.render === 'refresh') return live ? <RefreshRateScreen /> : <RefreshRatePreview />
   return null
 }
 
@@ -271,7 +371,7 @@ export function MonitorCheck({ screen, setScreen }: Props) {
         role={active !== null ? 'img' : undefined}
         aria-label={current ? `${current.label} test pattern` : undefined}
       >
-        {active !== null && current && <PatternContent pattern={current} showLabels={showHint} />}
+        {active !== null && current && <PatternContent pattern={current} showLabels={showHint} live />}
 
         {active !== null && (
           <div
