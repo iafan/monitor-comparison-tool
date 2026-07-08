@@ -32,6 +32,8 @@ const MESH_SAMPLES = 72
 
 const deg2rad = (d: number) => (d * Math.PI) / 180
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n))
+const HEAD_DRAG_SENS = 0.25 // degrees of head turn per pixel dragged
+const HEAD_KEY_STEP = 3 // degrees per arrow-key press
 
 /** WebGL guarantees at least 4096²; cap the texture there and downscale larger panels. */
 const MAX_TEX = 4096
@@ -424,6 +426,7 @@ function TopDown({
   headAngle,
   unit,
   onDistance,
+  onRotate,
 }: {
   widthIn: number
   curveRadius: number | null
@@ -431,7 +434,27 @@ function TopDown({
   headAngle: number
   unit: Unit
   onDistance: (inches: number) => void
+  onRotate: (deg: number) => void
 }) {
+  // Drag left/right anywhere on the diagram to aim the camera (direct: drag
+  // right → camera turns right). Starting on the distance field is ignored so it
+  // stays editable.
+  const dragRef = useRef<{ startX: number; startAngle: number } | null>(null)
+  const onPointerDown = (e: React.PointerEvent) => {
+    if ((e.target as HTMLElement).closest('label')) return
+    dragRef.current = { startX: e.clientX, startAngle: headAngle }
+    ;(e.currentTarget as Element).setPointerCapture?.(e.pointerId)
+  }
+  const onPointerMove = (e: React.PointerEvent) => {
+    const d = dragRef.current
+    if (!d) return
+    const next = d.startAngle + (e.clientX - d.startX) * HEAD_DRAG_SENS
+    onRotate(clamp(Math.round(next), -VIEW_HEAD_ANGLE_MAX, VIEW_HEAD_ANGLE_MAX))
+  }
+  const endDrag = () => {
+    dragRef.current = null
+  }
+
   const geom = useMemo(() => {
     const arc = arcPoints(widthIn, curveRadius, 48)
     const halfW = Math.max(...arc.map((p) => Math.abs(p[0])))
@@ -468,7 +491,14 @@ function TopDown({
   }, [widthIn, curveRadius, distanceIn, headAngle])
 
   return (
-    <div className="relative w-full max-w-[720px] overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-1)]">
+    <div
+      className="relative w-full max-w-[720px] cursor-ew-resize touch-none overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-1)] select-none"
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
+      title="Drag left/right to move the camera"
+    >
       <svg
         viewBox={`0 0 ${SVG_W} ${SVG_H}`}
         preserveAspectRatio="xMidYMid meet"
@@ -526,7 +556,7 @@ function TopDown({
 
       {/* Distance input, centered on the projection as requested. */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-        <label className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-1)]/95 px-2 py-1.5 shadow-sm backdrop-blur">
+        <label className="flex cursor-text items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-1)]/95 px-2 py-1.5 shadow-sm backdrop-blur">
           <span className="sr-only">Eye-to-screen distance</span>
           <NumberField
             value={distanceIn}
@@ -567,10 +597,12 @@ export default function MonitorView({ view, setView, unit, theme }: Props) {
   const { widthIn, heightIn } = physical(geo)
 
   // Head angle is ephemeral local state — never persisted to localStorage or the
-  // URL — so it starts centered on every load and a drag/slider scrub only
+  // URL — so it starts centered on every load and turning the head only
   // re-renders this view, never the whole app or its storage.
   const [headAngle, setHeadAngle] = useState(0)
 
+  // Dragging the 3D view moves the *monitor*: pull it right and it follows, which
+  // means the camera turns left — so the delta is inverted (opposite the top view).
   const onPointerDown = (e: React.PointerEvent) => {
     dragRef.current = { startX: e.clientX, startAngle: headAngle }
     ;(e.target as Element).setPointerCapture?.(e.pointerId)
@@ -578,20 +610,35 @@ export default function MonitorView({ view, setView, unit, theme }: Props) {
   const onPointerMove = (e: React.PointerEvent) => {
     const d = dragRef.current
     if (!d) return
-    const next = clamp(d.startAngle + (e.clientX - d.startX) * 0.25, -VIEW_HEAD_ANGLE_MAX, VIEW_HEAD_ANGLE_MAX)
-    setHeadAngle(Math.round(next))
+    const next = d.startAngle - (e.clientX - d.startX) * HEAD_DRAG_SENS
+    setHeadAngle(clamp(Math.round(next), -VIEW_HEAD_ANGLE_MAX, VIEW_HEAD_ANGLE_MAX))
   }
   const endDrag = () => {
     dragRef.current = null
   }
 
+  // Left/Right arrows turn the head (right = +), except while typing in a field.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+      const tag = document.activeElement?.tagName
+      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return
+      e.preventDefault()
+      const dir = e.key === 'ArrowRight' ? 1 : -1
+      const step = (e.shiftKey ? 10 : HEAD_KEY_STEP) * dir
+      setHeadAngle((a) => clamp(a + step, -VIEW_HEAD_ANGLE_MAX, VIEW_HEAD_ANGLE_MAX))
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   return (
     <section>
       <Intro>
-        See how a monitor fills your vision from where you sit. Pick a class or a specific model,
-        set how far your eyes are from the screen, and turn your head left and right — drag across
-        the 3D view or use the slider. The diagram below shows the same scene from above, with your
-        field of view drawn as rays.
+        See how a monitor fills your vision from where you sit. Pick a class or a specific model and
+        set how far your eyes are from the screen. Turn your head by dragging the monitor in the 3D
+        view, sliding the top view below, or pressing the <kbd>←</kbd> <kbd>→</kbd> keys — the top
+        view shows the same scene from above, with your field of view drawn as rays.
       </Intro>
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -613,7 +660,7 @@ export default function MonitorView({ view, setView, unit, theme }: Props) {
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
-        title="Drag left/right to turn your head"
+        title="Drag to move the monitor"
       >
         <FrontView
           widthIn={widthIn}
@@ -630,33 +677,8 @@ export default function MonitorView({ view, setView, unit, theme }: Props) {
         </div>
       </div>
 
-      {/* Head-turn control. */}
-      <div className="mt-4 flex items-center gap-3">
-        <span className="w-24 text-sm font-medium text-[var(--text-primary)]">Head angle</span>
-        <input
-          type="range"
-          min={-VIEW_HEAD_ANGLE_MAX}
-          max={VIEW_HEAD_ANGLE_MAX}
-          step={1}
-          value={headAngle}
-          onChange={(e) => setHeadAngle(Number(e.target.value))}
-          className="h-2 flex-1 cursor-pointer accent-[var(--series-1)]"
-          aria-label="Head angle in degrees"
-        />
-        <span className="w-14 text-right text-sm tabular-nums text-[var(--text-secondary)]">
-          {headAngle > 0 ? `+${headAngle}` : headAngle}°
-        </span>
-        <button
-          type="button"
-          onClick={() => setHeadAngle(0)}
-          className="cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-3 py-1.5 text-sm text-[var(--text-secondary)]"
-        >
-          Center
-        </button>
-      </div>
-
-      {/* Top-down projection. */}
-      <div className="mt-8 flex flex-col items-center gap-2">
+      {/* Top-down projection — also the primary head-turn control. */}
+      <div className="mt-6 flex flex-col items-center gap-2">
         <h2 className="self-start text-sm font-semibold text-[var(--text-primary)]">Top view</h2>
         <TopDown
           widthIn={widthIn}
@@ -665,6 +687,7 @@ export default function MonitorView({ view, setView, unit, theme }: Props) {
           headAngle={headAngle}
           unit={unit}
           onDistance={(inches) => setView({ distanceIn: inches })}
+          onRotate={setHeadAngle}
         />
         <p className="text-xs text-[var(--text-muted)]">
           Distance {formatLength(view.distanceIn, unit)} · viewing angle{' '}

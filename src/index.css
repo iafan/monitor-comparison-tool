@@ -94,3 +94,19 @@ body {
   color: var(--text-primary);
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
 }
+
+/*
+ * iOS Safari zooms the page in whenever a focused form control has a font-size
+ * below 16px, and then leaves the page zoomed after the keyboard is dismissed.
+ * Force controls to at least 16px on touch devices to prevent that zoom
+ * altogether. These rules are unlayered, so they override Tailwind's text-*
+ * utilities (which live in a cascade layer); desktop (fine pointer) is untouched
+ * and keeps the smaller design sizes.
+ */
+@media (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
