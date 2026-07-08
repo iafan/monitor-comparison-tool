@@ -23,6 +23,9 @@ function GeometryCanvas() {
       // outline there falls on a sub-pixel and disappears.
       const cssW = parent.clientWidth
       const cssH = parent.clientHeight
+      // Skip degenerate sizes (e.g. before layout settles) — the circle radii
+      // would go negative and throw; the ResizeObserver redraws once sized.
+      if (cssW < 4 || cssH < 4) return
       const w = Math.max(1, Math.round(cssW * dpr))
       const h = Math.max(1, Math.round(cssH * dpr))
       canvas.width = w
