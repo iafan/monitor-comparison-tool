@@ -37,25 +37,60 @@ export function modelsInClass(classId: string): MonitorModel[] {
   return MONITOR_MODELS.filter((m) => m.classId === classId)
 }
 
-/** Geometry + name resolved from a catalogue selection (a class or model id). */
+/** Geometry + name resolved from a picker selection. */
 export interface CatalogueGeometry {
   name: string
   resWidth: number
   resHeight: number
   diagonal: number
   curveRadius: number | null
-  /** The class this geometry came from. */
-  classId: string
+  /** The class this geometry came from — absent for a self-contained custom token. */
+  classId?: string
   /** The specific model, when the selection was a model rather than a bare class. */
   modelId?: string
 }
 
 /**
- * Resolves a picker selection — either a class id or a model id — to concrete
- * geometry plus a display name. Returns undefined for an unknown id. Used by
- * tools that let the viewer pick "a class or a specific monitor" (the 3D viewer).
+ * A self-contained selection token for an arbitrary monitor (the viewer's own
+ * list), encoding geometry + name so it resolves without the live monitor list:
+ *   `@<w>x<h>_<diag>[_<curve>]:<uri-encoded name>`
+ */
+export function monitorSelectionToken(m: {
+  resWidth: number
+  resHeight: number
+  diagonal: number
+  curveRadius: number | null
+  name: string
+}): string {
+  const curve = m.curveRadius ? `_${m.curveRadius}` : ''
+  return `@${m.resWidth}x${m.resHeight}_${m.diagonal}${curve}:${encodeURIComponent(m.name)}`
+}
+
+/**
+ * Resolves a picker selection — a class id, a model id, or a self-contained
+ * custom `@…` token (see monitorSelectionToken) — to concrete geometry plus a
+ * display name. Returns undefined for an unknown/invalid id.
  */
 export function resolveSelection(id: string): CatalogueGeometry | undefined {
+  if (id.startsWith('@')) {
+    const body = id.slice(1)
+    const colon = body.indexOf(':')
+    const geom = colon === -1 ? body : body.slice(0, colon)
+    const name = colon === -1 ? '' : decodeURIComponent(body.slice(colon + 1))
+    const [wh, diagStr, curveStr] = geom.split('_')
+    const [w, h] = (wh ?? '').split('x').map(Number)
+    const diagonal = Number(diagStr)
+    const curveRadius = curveStr != null ? Number(curveStr) : null
+    if (![w, h, diagonal].every((n) => Number.isFinite(n) && n > 0)) return undefined
+    if (curveRadius != null && !Number.isFinite(curveRadius)) return undefined
+    return {
+      name: name || `${diagonal}" ${w}×${h}`,
+      resWidth: w,
+      resHeight: h,
+      diagonal,
+      curveRadius,
+    }
+  }
   const model = MONITOR_MODELS.find((m) => m.id === id)
   if (model) {
     const c = CLASS_BY_ID.get(model.classId)

@@ -9,10 +9,10 @@ import {
   SIMULATOR_HEAD_ANGLE_MAX,
   SIMULATOR_PITCH_MAX,
 } from '../constants'
-import { resolveSelection } from '../data'
+import { monitorSelectionToken, resolveSelection } from '../data'
 import { arcPoints, physical } from '../lib/geometry'
 import { fromInches, roundToUnit, toInches, UNIT_LABELS } from '../lib/units'
-import type { SimulatorSettings, Unit } from '../types'
+import type { Monitor, SimulatorSettings, Unit } from '../types'
 import { Intro } from './Intro'
 import { MonitorPicker } from './MonitorPicker'
 import { NumberField } from './NumberField'
@@ -609,17 +609,23 @@ function TopDown({
 interface Props {
   simulator: SimulatorSettings
   setSimulator: (patch: Partial<SimulatorSettings>) => void
+  /** The viewer's own monitors, offered as a "My monitors" section in the picker. */
+  monitors: Monitor[]
   unit: Unit
   theme: 'light' | 'dark'
 }
 
-export default function MonitorSimulator({ simulator, setSimulator, unit, theme }: Props) {
+export default function MonitorSimulator({ simulator, setSimulator, monitors, unit, theme }: Props) {
   const dragRef = useRef<{ startX: number; startY: number; startAngle: number; startPitch: number } | null>(
     null,
   )
 
   const geo = resolveSelection(simulator.selection) ?? resolveSelection(DEFAULT_SIMULATOR.selection)!
   const { widthIn, heightIn } = physical(geo)
+  const myMonitors = useMemo(
+    () => monitors.map((m) => ({ value: monitorSelectionToken(m), label: m.name })),
+    [monitors],
+  )
 
   // Yaw, pitch and the *actual* eye distance are ephemeral local state — never
   // persisted. The nominal distance (the input-field value) is the persisted one
@@ -789,8 +795,9 @@ export default function MonitorSimulator({ simulator, setSimulator, unit, theme 
         <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
           <span className="font-medium text-[var(--text-primary)]">Monitor</span>
           <MonitorPicker
-            value={geo.modelId ?? geo.classId}
+            value={simulator.selection}
             onChange={(id) => setSimulator({ selection: id })}
+            custom={myMonitors}
             aria-label="Monitor"
             className="min-h-11 cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2 text-sm text-[var(--text-primary)]"
           />

@@ -44,6 +44,7 @@ export function App() {
             <MonitorSimulator
               simulator={app.simulator}
               setSimulator={app.setSimulator}
+              monitors={app.monitors}
               unit={app.preferences.unit}
               theme={app.theme}
             />

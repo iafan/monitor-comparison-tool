@@ -248,8 +248,9 @@ const SETTINGS: Setting<any>[] = [
     } as Setting<Tool>,
     {
       // Monitor Simulator state as one compact token: `<selection>_<distanceIn>`.
-      // Class/model ids never contain `_`, so it's an unambiguous separator.
-      // (Head angle is deliberately not serialized — it's ephemeral.)
+      // The distance is always the final `_`-delimited segment, so a custom `@…`
+      // selection (which itself contains `_`) round-trips. (Head angle and the
+      // ephemeral eye distance are deliberately not serialized — only the nominal.)
       key: 'sim',
       get: (s) => s.simulator,
       set: (d, v) => (d.simulator = v),
@@ -257,12 +258,11 @@ const SETTINGS: Setting<any>[] = [
         v.selection === DEFAULT_SIMULATOR.selection && v.distanceIn === DEFAULT_SIMULATOR.distanceIn,
       encode: (v) => `${v.selection}_${v.distanceIn}`,
       decode: (raw) => {
-        const parts = raw.split('_')
-        if (parts.length !== 2) return undefined
-        const [selection, distStr] = parts
-        if (!resolveSelection(selection)) return undefined
-        const distanceIn = Number(distStr)
-        if (!Number.isFinite(distanceIn)) return undefined
+        const cut = raw.lastIndexOf('_')
+        if (cut <= 0) return undefined
+        const selection = raw.slice(0, cut)
+        const distanceIn = Number(raw.slice(cut + 1))
+        if (!resolveSelection(selection) || !Number.isFinite(distanceIn)) return undefined
         return { selection, distanceIn }
       },
       relevant: inSimulator,
