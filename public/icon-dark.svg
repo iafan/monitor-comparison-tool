@@ -1,15 +1,29 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200" role="img" aria-label="Monitorture">
-  <!-- RGB test bars: full bleed, equal width -->
+  <!-- RGB test bars: full bleed, equal width (the bottom sector stays in color) -->
   <rect x="0" y="0" width="400" height="1200" fill="#ff0000"/>
   <rect x="400" y="0" width="400" height="1200" fill="#00ff00"/>
-  <rect x="800" y="0" width="400" height="1200" fill="#0000ff"/>
+  <rect x="800" y="0" width="400" height="1200" fill="#4d84ff"/>
 
-  <!-- Test-card screen: everything above the two rays -->
   <defs>
+    <!-- Top sector: the test-card screen, above the two up-rays -->
     <clipPath id="screen">
-      <path d="M0 0 H1200 V360 L600 600 L0 360 Z"/>
+      <path d="M0 0 H1200 V225 L600 600 L0 225 Z"/>
+    </clipPath>
+    <!-- Left + right sectors: the two side triangles of the X -->
+    <clipPath id="sides">
+      <path d="M600 600 L0 225 L0 975 Z"/>
+      <path d="M600 600 L1200 225 L1200 975 Z"/>
     </clipPath>
   </defs>
+
+  <!-- The R/G/B bars rendered in black-and-white inside the side sectors -->
+  <g clip-path="url(#sides)">
+    <rect x="0" y="0" width="400" height="1200" fill="#8b8b8b"/>
+    <rect x="400" y="0" width="400" height="1200" fill="#b5b5b5"/>
+    <rect x="800" y="0" width="400" height="1200" fill="#8b8b8b"/>
+  </g>
+
+  <!-- Test-card screen: crosshatch grid + concentric circles -->
   <g clip-path="url(#screen)">
     <rect x="0" y="0" width="1200" height="1200" fill="#ffffff"/>
     <g fill="none" stroke="#000000" stroke-width="26">
@@ -30,10 +44,9 @@
     </g>
   </g>
 
-  <!-- M: rays meeting at the icon center + bar-seam outlines -->
+  <!-- The X: up-rays + mirrored down-rays, meeting at the icon center -->
   <g fill="none" stroke="#000000" stroke-width="26" stroke-linejoin="round" stroke-linecap="round">
-    <polyline points="0,360 600,600 1200,360"/>
-    <line x1="400" y1="520" x2="400" y2="1200"/>
-    <line x1="800" y1="520" x2="800" y2="1200"/>
+    <polyline points="0,225 600,600 1200,225"/>
+    <polyline points="0,975 600,600 1200,975"/>
   </g>
 </svg>
