@@ -389,7 +389,9 @@ function FrontView({
   dark: boolean
 }) {
   const texture = useScreenTexture(resWidth, resHeight)
-  const bg = dark ? '#0c0c0e' : '#dfe3ea'
+  // Dark: the top view's --surface-1 gray rather than near-black, so the dark
+  // monitor bezel reads against the ambient background instead of merging into it.
+  const bg = dark ? '#1a1a19' : '#dfe3ea'
   return (
     <Canvas dpr={[1, 2]} gl={{ antialias: true }} frameloop="demand">
       <color attach="background" args={[bg]} />
