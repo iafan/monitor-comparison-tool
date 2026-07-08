@@ -18,9 +18,10 @@ import { MonitorPicker } from './MonitorPicker'
 import { NumberField } from './NumberField'
 
 // The eye's simulated field of view. Three's camera fov is vertical; we fix the
-// front-view canvas to 16:9 so the horizontal fov (what actually matters for
-// "does the whole width fit?") is stable and can be mirrored in the top view.
-const ASPECT = 16 / 9
+// front-view canvas to 3:2 — the proportion of the human forward field of view
+// (~210° wide × ~150° tall ≈ 1.4, and the native frame of a 43mm normal lens) —
+// so the horizontal fov is stable and can be mirrored in the top view.
+const ASPECT = 3 / 2
 // ~45° horizontal ≈ a 43mm "true normal" lens on full-frame — focal length equal
 // to the frame diagonal (2·atan(18/43.3)), the geometric definition of natural
 // human perspective. The eye position (distance) drives the actual distortion;
@@ -677,9 +678,9 @@ export default function MonitorSimulator({ simulator, setSimulator, unit, theme 
         </label>
       </div>
 
-      {/* First-person 3D view. Fixed 16:9 so the horizontal FOV is stable. */}
+      {/* First-person 3D view. Fixed 3:2 (human-field proportion) so the horizontal FOV is stable. */}
       <div
-        className="relative aspect-video w-full cursor-grab touch-none overflow-hidden rounded-xl border border-[var(--border)] select-none active:cursor-grabbing"
+        className="relative aspect-[3/2] w-full cursor-grab touch-none overflow-hidden rounded-xl border border-[var(--border)] select-none active:cursor-grabbing"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
