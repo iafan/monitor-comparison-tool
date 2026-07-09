@@ -96,6 +96,7 @@ export const PRESETS: Preset[] = [
   { label: 'WQHD+ (1600p) — 3840 × 1600', resWidth: 3840, resHeight: 1600 },
   { label: '4K UHD — 3840 × 2160', resWidth: 3840, resHeight: 2160 },
   { label: 'DQHD (Super UltraWide) — 5120 × 1440', resWidth: 5120, resHeight: 1440 },
+  { label: '5K2K WUHD — 5120 × 2160', resWidth: 5120, resHeight: 2160 },
   { label: '5K — 5120 × 2880', resWidth: 5120, resHeight: 2880 },
   { label: '6K — 6016 × 3384', resWidth: 6016, resHeight: 3384 },
 ]
