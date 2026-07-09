@@ -59,7 +59,7 @@ export function UpdatePrompt() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={dismiss}>
       <div
-        className="rounded-md bg-black/55 px-3 py-1.5 text-xs text-white shadow"
+        className="rounded-lg bg-black/55 px-5 py-3 text-xs text-white shadow"
         onClick={(e) => e.stopPropagation()}
       >
         Updating…

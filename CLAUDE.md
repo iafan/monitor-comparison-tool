@@ -28,9 +28,11 @@ When — and only when — I say **"go"**, perform the full release in one seque
 
 1. **Commit** the working changes with a clear, descriptive message.
 2. **Push** to `claude/monitor-comparison-app-bb0k5l` (the branch above).
-3. **Publish** by triggering the GitHub Automation: dispatch the
-   **"Deploy to GitHub Pages"** workflow (`.github/workflows/pages.yml`, via
-   `workflow_dispatch`), which builds and deploys the site.
+3. **Watch the deploy finish.** The push itself triggers the **"Deploy to GitHub
+   Pages"** workflow (`.github/workflows/pages.yml` runs `on: push` for this
+   branch) — no manual `workflow_dispatch` is needed. Confirm the run completes
+   successfully (watch the Actions run, e.g. via the GitHub MCP tools) and report
+   the outcome; don't assume the push alone means the site is live.
 
 If I ask for changes without saying "go", stop after the working-tree edits and
-wait. "Go" is the only trigger for the commit + push + publish sequence.
+wait. "Go" is the only trigger for the commit + push sequence.
