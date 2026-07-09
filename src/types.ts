@@ -1,5 +1,5 @@
 /** Which tool is active in the top-level tool selector. */
-export type Tool = 'comparison' | 'check' | 'geometry' | 'simulator'
+export type Tool = 'comparison' | 'myMonitors' | 'check' | 'geometry' | 'simulator'
 
 /**
  * The Monitor Simulator's shareable state: which monitor is on screen and how far the

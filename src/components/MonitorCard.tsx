@@ -7,10 +7,12 @@ import type { Monitor, Unit } from '../types'
 interface Props {
   monitor: Monitor
   unit: Unit
-  /** Resolved swatch color (series color when enabled, gray when disabled). */
-  color: string
-  onToggle: (id: string) => void
-  onEdit: (monitor: Monitor) => void
+  /** Resolved swatch color (series color when enabled, gray when disabled). Omit to hide the swatch. */
+  color?: string
+  /** Provide to show the include-in-comparison checkbox; omit for a plain (library) card. */
+  onToggle?: (id: string) => void
+  /** Provide to show an Edit button. */
+  onEdit?: (monitor: Monitor) => void
   onDelete: (monitor: Monitor) => void
 }
 
@@ -33,19 +35,21 @@ export function MonitorCard({ monitor, unit, color, onToggle, onEdit, onDelete }
   return (
     <div
       className={`flex items-center gap-2.5 rounded-[10px] border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2.5 ${
-        monitor.visible ? '' : 'opacity-45'
+        onToggle && !monitor.visible ? 'opacity-45' : ''
       }`}
     >
-      <input
-        type="checkbox"
-        checked={monitor.visible}
-        onChange={() => onToggle(monitor.id)}
-        aria-label={`Show ${monitor.name} in comparison`}
-        className="size-4"
-      />
+      {onToggle && (
+        <input
+          type="checkbox"
+          checked={monitor.visible}
+          onChange={() => onToggle(monitor.id)}
+          aria-label={`Show ${monitor.name} in comparison`}
+          className="size-4"
+        />
+      )}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="size-3.5 flex-none rounded-[4px]" style={{ background: color }} />
+          {color && <span className="size-3.5 flex-none rounded-[4px]" style={{ background: color }} />}
           <span className="truncate font-semibold">{monitor.name}</span>
         </div>
         <div className="text-xs text-[var(--text-muted)]">
@@ -77,13 +81,15 @@ export function MonitorCard({ monitor, unit, color, onToggle, onEdit, onDelete }
         )}
       </div>
       <div className="flex flex-none gap-1.5">
-        <button
-          type="button"
-          onClick={() => onEdit(monitor)}
-          className="min-h-9 cursor-pointer rounded-lg border border-[var(--border)] px-2.5 py-1.5 text-sm font-semibold"
-        >
-          Edit
-        </button>
+        {onEdit && (
+          <button
+            type="button"
+            onClick={() => onEdit(monitor)}
+            className="min-h-9 cursor-pointer rounded-lg border border-[var(--border)] px-2.5 py-1.5 text-sm font-semibold"
+          >
+            Edit
+          </button>
+        )}
         <button
           type="button"
           onClick={() => onDelete(monitor)}

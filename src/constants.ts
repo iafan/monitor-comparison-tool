@@ -2,6 +2,7 @@ import { classDefaultName, getClass } from './data'
 import type { Alignment, Monitor, Preferences, SimulatorSettings, TopViewAlign } from './types'
 
 export const STORAGE_KEY = 'monitor-comparison:monitors:v1'
+export const MY_MONITORS_KEY = 'monitor-comparison:my-monitors:v1'
 export const ALIGN_KEY = 'monitor-comparison:alignment:v1'
 export const TOPVIEW_ALIGN_KEY = 'monitor-comparison:topview-align:v1'
 export const PREFS_KEY = 'monitor-comparison:preferences:v1'

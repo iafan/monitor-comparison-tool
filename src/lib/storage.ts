@@ -2,6 +2,7 @@ import {
   ALIGN_KEY,
   ALIGNMENTS,
   DEFAULT_MONITORS,
+  MY_MONITORS_KEY,
   DEFAULT_PREFERENCES,
   DEFAULT_SIMULATOR,
   PREFS_KEY,
@@ -52,6 +53,23 @@ export function saveMonitors(monitors: Monitor[]): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(monitors))
 }
 
+/** The user's saved custom-monitor library (feeds the "My monitors" pickers). Starts empty. */
+export function loadMyMonitors(): Monitor[] {
+  try {
+    const raw = localStorage.getItem(MY_MONITORS_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return (parsed as Monitor[]).map((m) => ({ ...m, curveRadius: m.curveRadius ?? null }))
+  } catch {
+    return []
+  }
+}
+
+export function saveMyMonitors(monitors: Monitor[]): void {
+  localStorage.setItem(MY_MONITORS_KEY, JSON.stringify(monitors))
+}
+
 export function loadAlignment(): Alignment {
   const raw = localStorage.getItem(ALIGN_KEY)
   return (ALIGNMENTS as string[]).includes(raw ?? '') ? (raw as Alignment) : 'center'
@@ -84,11 +102,11 @@ export function savePreferences(prefs: Preferences): void {
   localStorage.setItem(PREFS_KEY, JSON.stringify(prefs))
 }
 
+const TOOLS: Tool[] = ['comparison', 'myMonitors', 'check', 'geometry', 'simulator']
+
 export function loadTool(): Tool {
   const raw = localStorage.getItem(TOOL_KEY)
-  return raw === 'comparison' || raw === 'check' || raw === 'geometry' || raw === 'simulator'
-    ? raw
-    : 'comparison'
+  return TOOLS.includes(raw as Tool) ? (raw as Tool) : 'comparison'
 }
 
 export function saveTool(tool: Tool): void {

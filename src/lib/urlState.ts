@@ -37,6 +37,8 @@ export interface AppState {
   tool: Tool
   /** Explicit theme choice; null = follow the system preference. */
   themeChoice: Theme | null
+  /** The user's saved custom-monitor library. Persisted only — never URL-shared. */
+  myMonitors: Monitor[]
   monitors: Monitor[]
   alignment: Alignment
   topViewAlign: TopViewAlign
@@ -242,9 +244,18 @@ const SETTINGS: Setting<any>[] = [
       get: (s) => s.tool,
       set: (d, v) => (d.tool = v),
       isDefault: (v) => v === 'comparison',
-      encode: (v) => (v === 'check' ? 'k' : v === 'geometry' ? 'g' : 's'),
+      encode: (v) =>
+        v === 'check' ? 'k' : v === 'geometry' ? 'g' : v === 'myMonitors' ? 'm' : 's',
       decode: (raw) =>
-        raw === 'k' ? 'check' : raw === 'g' ? 'geometry' : raw === 's' ? 'simulator' : undefined,
+        raw === 'k'
+          ? 'check'
+          : raw === 'g'
+            ? 'geometry'
+            : raw === 'm'
+              ? 'myMonitors'
+              : raw === 's'
+                ? 'simulator'
+                : undefined,
     } as Setting<Tool>,
     {
       // Monitor Simulator state as one compact token: `<selection>_<distanceIn>`.
@@ -319,6 +330,8 @@ export function applyDecoded(base: AppState, d: Decoded): AppState {
   return {
     tool: d.tool ?? base.tool,
     themeChoice: d.themeChoice ?? base.themeChoice,
+    // The library is never encoded in the URL — always the viewer's own.
+    myMonitors: base.myMonitors,
     monitors: d.monitors ?? base.monitors,
     alignment: d.alignment ?? base.alignment,
     topViewAlign: d.topViewAlign ?? base.topViewAlign,

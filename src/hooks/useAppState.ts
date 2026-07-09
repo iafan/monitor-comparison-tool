@@ -14,6 +14,7 @@ import { sortMonitors } from '../lib/geometry'
 import {
   loadAlignment,
   loadMonitors,
+  loadMyMonitors,
   loadPreferences,
   loadTheme,
   loadTool,
@@ -22,6 +23,7 @@ import {
   loadVisibleFrame,
   saveAlignment,
   saveMonitors,
+  saveMyMonitors,
   savePreferences,
   saveTheme,
   saveTool,
@@ -45,6 +47,7 @@ function storedState(): AppState {
   return {
     tool: loadTool(),
     themeChoice: loadTheme(),
+    myMonitors: loadMyMonitors(),
     monitors: loadMonitors(),
     alignment: loadAlignment(),
     topViewAlign: loadTopViewAlign(),
@@ -77,6 +80,11 @@ export interface AppStore {
   /** The viewer's raw preference: null = Auto (follow the system). */
   themeChoice: Theme | null
   setThemeChoice: (choice: Theme | null) => void
+  /** The user's saved custom-monitor library (managed by the My Monitors tool). */
+  myMonitors: Monitor[]
+  addMyMonitor: (input: MonitorInput) => void
+  updateMyMonitor: (id: string, input: MonitorInput) => void
+  deleteMyMonitor: (id: string) => void
   monitors: Monitor[]
   addMonitor: (input: MonitorInput) => void
   updateMonitor: (id: string, input: MonitorInput) => void
@@ -142,8 +150,13 @@ export function useAppState(): AppStore {
     const onHashChange = () => {
       const fragment = readFragment()
       if (fragment === encoded) return // our own write
-      // Re-hydrate from stored baseline + the new fragment; keep the viewer's theme.
-      setState((s) => ({ ...applyDecoded(storedState(), decodeState(fragment)), themeChoice: s.themeChoice }))
+      // Re-hydrate from stored baseline + the new fragment; keep the viewer's own
+      // theme and monitor library (neither is carried in a shared URL).
+      setState((s) => ({
+        ...applyDecoded(storedState(), decodeState(fragment)),
+        themeChoice: s.themeChoice,
+        myMonitors: s.myMonitors,
+      }))
       persist.current = false
     }
     window.addEventListener('hashchange', onHashChange)
@@ -169,6 +182,33 @@ export function useAppState(): AppStore {
     saveTheme(choice)
     setState((s) => ({ ...s, themeChoice: choice }))
   }, [])
+
+  // The My Monitors library is the viewer's own — always persisted immediately and
+  // never gated by the ephemeral (shared-view) flag or written to the URL.
+  const mutateLibrary = useCallback((next: (list: Monitor[]) => Monitor[]) => {
+    setState((s) => {
+      const myMonitors = next(s.myMonitors)
+      saveMyMonitors(myMonitors)
+      return { ...s, myMonitors }
+    })
+  }, [])
+
+  const addMyMonitor = useCallback(
+    (input: MonitorInput) =>
+      mutateLibrary((list) => [...list, { ...input, id: uid(), visible: true }]),
+    [mutateLibrary],
+  )
+
+  const updateMyMonitor = useCallback(
+    (id: string, input: MonitorInput) =>
+      mutateLibrary((list) => list.map((m) => (m.id === id ? { ...m, ...input } : m))),
+    [mutateLibrary],
+  )
+
+  const deleteMyMonitor = useCallback(
+    (id: string) => mutateLibrary((list) => list.filter((m) => m.id !== id)),
+    [mutateLibrary],
+  )
 
   const setAlignment = useCallback((alignment: Alignment) => mutate((s) => ({ ...s, alignment })), [mutate])
 
@@ -227,6 +267,10 @@ export function useAppState(): AppStore {
     theme: resolvedTheme,
     themeChoice: state.themeChoice,
     setThemeChoice,
+    myMonitors: state.myMonitors,
+    addMyMonitor,
+    updateMyMonitor,
+    deleteMyMonitor,
     monitors,
     addMonitor,
     updateMonitor,

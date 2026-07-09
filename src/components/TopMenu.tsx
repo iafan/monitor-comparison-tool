@@ -9,12 +9,13 @@ interface Props {
 
 const TOOL_LABELS: Record<Tool, string> = {
   comparison: 'Monitor Size Comparison',
+  myMonitors: 'My Monitors',
   check: 'Monitor Check',
   geometry: 'Monitor Geometry',
   simulator: 'Monitor Simulator in 3D',
 }
 
-const TOOL_ORDER: Tool[] = ['comparison', 'simulator', 'check', 'geometry']
+const TOOL_ORDER: Tool[] = ['comparison', 'simulator', 'myMonitors', 'check', 'geometry']
 
 export function TopMenu({ tool, onToolChange, theme, onOpenSettings }: Props) {
   const isDark = theme === 'dark'

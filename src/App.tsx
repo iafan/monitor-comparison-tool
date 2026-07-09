@@ -15,6 +15,7 @@ const MonitorCheck = lazy(() =>
 const MonitorGeometry = lazy(() =>
   import('./components/MonitorGeometry').then((m) => ({ default: m.MonitorGeometry })),
 )
+const MyMonitors = lazy(() => import('./components/MyMonitors').then((m) => ({ default: m.MyMonitors })))
 const MonitorSimulator = lazy(() => import('./components/MonitorSimulator'))
 
 function ToolLoading() {
@@ -42,8 +43,9 @@ export function App() {
           {app.tool === 'comparison' && (
             <MonitorComparison
               monitors={app.monitors}
+              myMonitors={app.myMonitors}
+              onManageMonitors={() => app.setTool('myMonitors')}
               addMonitor={app.addMonitor}
-              updateMonitor={app.updateMonitor}
               deleteMonitor={app.deleteMonitor}
               toggleVisibility={app.toggleVisibility}
               alignment={app.alignment}
@@ -54,6 +56,15 @@ export function App() {
               updatePreferences={app.updatePreferences}
             />
           )}
+          {app.tool === 'myMonitors' && (
+            <MyMonitors
+              myMonitors={app.myMonitors}
+              addMyMonitor={app.addMyMonitor}
+              updateMyMonitor={app.updateMyMonitor}
+              deleteMyMonitor={app.deleteMyMonitor}
+              unit={app.preferences.unit}
+            />
+          )}
           {app.tool === 'check' && <MonitorCheck screen={app.checkScreen} setScreen={app.setCheckScreen} />}
           {app.tool === 'geometry' && (
             <MonitorGeometry visibleFrame={app.visibleFrame} setVisibleFrame={app.setVisibleFrame} />
@@ -62,7 +73,7 @@ export function App() {
             <MonitorSimulator
               simulator={app.simulator}
               setSimulator={app.setSimulator}
-              monitors={app.monitors}
+              monitors={app.myMonitors}
               unit={app.preferences.unit}
               theme={app.theme}
             />

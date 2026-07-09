@@ -7,13 +7,16 @@ import { MonitorList } from './MonitorList'
 import { DetailsTable } from './DetailsTable'
 import { AlignmentPicker } from './AlignmentPicker'
 import { DeskSettings } from './DeskSettings'
-import { MonitorFormModal } from './MonitorFormModal'
+import { AddToComparisonModal } from './AddToComparisonModal'
 import type { Alignment, Monitor, MonitorInput, Preferences as Prefs, TopViewAlign } from '../types'
 
 interface Props {
   monitors: Monitor[]
+  /** The viewer's saved custom-monitor library, offered in the Add dialog. */
+  myMonitors: Monitor[]
+  /** Switch to the My Monitors tool (from the Add dialog's empty-state link). */
+  onManageMonitors: () => void
   addMonitor: (input: MonitorInput) => void
-  updateMonitor: (id: string, input: MonitorInput) => void
   deleteMonitor: (id: string) => void
   toggleVisibility: (id: string) => void
   alignment: Alignment
@@ -24,13 +27,11 @@ interface Props {
   updatePreferences: (patch: Partial<Prefs>) => void
 }
 
-/** null = modal closed; { editing } = open (editing null means "add new"). */
-type ModalState = { editing: Monitor | null } | null
-
 export function MonitorComparison({
   monitors,
+  myMonitors,
+  onManageMonitors,
   addMonitor,
-  updateMonitor,
   deleteMonitor,
   toggleVisibility,
   alignment,
@@ -40,20 +41,16 @@ export function MonitorComparison({
   preferences,
   updatePreferences,
 }: Props) {
-  const [modal, setModal] = useState<ModalState>(null)
+  const [adding, setAdding] = useState(false)
 
   const { unit, deskEnabled, deskWidth, deskDepth, deskX, deskY } = preferences
   const hasCurved = monitors.some((m) => m.visible && m.curveRadius)
   // Colors are assigned by enabled position (top to bottom), shared by every view.
   const colors = useMemo(() => assignColors(monitors), [monitors])
 
-  const handleSave = (input: MonitorInput) => {
-    if (modal?.editing) {
-      updateMonitor(modal.editing.id, input)
-    } else {
-      addMonitor(input)
-    }
-    setModal(null)
+  const handleAdd = (input: MonitorInput) => {
+    addMonitor(input)
+    setAdding(false)
   }
 
   const handleDelete = (monitor: Monitor) => {
@@ -87,9 +84,8 @@ export function MonitorComparison({
         monitors={monitors}
         unit={unit}
         colors={colors}
-        onAdd={() => setModal({ editing: null })}
+        onAdd={() => setAdding(true)}
         onToggle={toggleVisibility}
-        onEdit={(monitor) => setModal({ editing: monitor })}
         onDelete={handleDelete}
       />
       <AlignmentPicker
@@ -101,11 +97,12 @@ export function MonitorComparison({
       />
       <DeskSettings preferences={preferences} onChange={updatePreferences} />
 
-      {modal && (
-        <MonitorFormModal
-          editing={modal.editing}
-          onSave={handleSave}
-          onClose={() => setModal(null)}
+      {adding && (
+        <AddToComparisonModal
+          myMonitors={myMonitors}
+          onAdd={handleAdd}
+          onClose={() => setAdding(false)}
+          onGoToMyMonitors={onManageMonitors}
         />
       )}
     </>
