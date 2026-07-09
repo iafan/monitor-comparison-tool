@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://monitorture.com/sitemap.xml
