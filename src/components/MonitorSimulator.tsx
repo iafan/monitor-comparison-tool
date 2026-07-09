@@ -11,7 +11,7 @@ import {
 } from '../constants'
 import { monitorSelectionToken, resolveSelection } from '../data'
 import { arcPoints, physical } from '../lib/geometry'
-import { fromInches, roundToUnit, toInches, UNIT_LABELS } from '../lib/units'
+import { formatLength, fromInches, roundToUnit, toInches, UNIT_LABELS } from '../lib/units'
 import type { Monitor, SimulatorSettings, Unit } from '../types'
 import { Intro } from './Intro'
 import { MonitorPicker } from './MonitorPicker'
@@ -442,7 +442,6 @@ function TopDown({
   nominalDistanceIn,
   headAngle,
   unit,
-  onDistance,
   onRotate,
 }: {
   widthIn: number
@@ -453,15 +452,12 @@ function TopDown({
   curveRadius: number | null
   headAngle: number
   unit: Unit
-  onDistance: (inches: number) => void
   onRotate: (deg: number) => void
 }) {
   // Drag left/right anywhere on the diagram to aim the camera (direct: drag
-  // right → camera turns right). Starting on the distance field is ignored so it
-  // stays editable.
+  // right → camera turns right).
   const dragRef = useRef<{ startX: number; startAngle: number } | null>(null)
   const onPointerDown = (e: React.PointerEvent) => {
-    if ((e.target as HTMLElement).closest('label')) return
     dragRef.current = { startX: e.clientX, startAngle: headAngle }
     ;(e.currentTarget as Element).setPointerCapture?.(e.pointerId)
   }
@@ -580,28 +576,36 @@ function TopDown({
         <text x={geom.apex.x} y={geom.apex.y - 8} fill="currentColor" fontSize={13} textAnchor="middle">
           Screen
         </text>
+        {/* Actual eye-to-screen distance, at the middle of the dotted guide. */}
+        {(() => {
+          const midY = (geom.apex.y + geom.eye.y) / 2
+          const label = formatLength(distanceIn, unit)
+          const w = label.length * 7.5 + 12
+          return (
+            <>
+              <rect
+                x={geom.cx - w / 2}
+                y={midY - 10}
+                width={w}
+                height={20}
+                rx={5}
+                fill="var(--surface-1)"
+                opacity={0.9}
+              />
+              <text
+                x={geom.cx}
+                y={midY + 4}
+                textAnchor="middle"
+                fontSize={13}
+                fill="var(--text-primary)"
+                className="tabular-nums"
+              >
+                {label}
+              </text>
+            </>
+          )
+        })()}
       </svg>
-
-      {/* Distance input, centered on the projection. */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-        <label className="flex cursor-text items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-1)]/95 px-2 py-1.5 shadow-sm backdrop-blur">
-          <span className="sr-only">Eye-to-screen distance</span>
-          <NumberField
-            value={nominalDistanceIn}
-            onCommit={(v) => v !== null && onDistance(v)}
-            parse={(disp) => toInches(disp, unit)}
-            format={(inches) => String(roundToUnit(inches, unit))}
-            clamp={(inches) => clamp(inches, SIMULATOR_DISTANCE_MIN_IN, SIMULATOR_DISTANCE_MAX_IN)}
-            min={fromInches(SIMULATOR_DISTANCE_MIN_IN, unit)}
-            max={fromInches(SIMULATOR_DISTANCE_MAX_IN, unit)}
-            step="any"
-            inputMode="decimal"
-            aria-label="Eye-to-screen distance"
-            className="w-16 bg-transparent text-center text-sm font-semibold tabular-nums text-[var(--text-primary)] outline-none"
-          />
-          <span className="text-xs text-[var(--text-secondary)]">{UNIT_LABELS[unit]}</span>
-        </label>
-      </div>
     </div>
   )
 }
@@ -849,23 +853,38 @@ export default function MonitorSimulator({ simulator, setSimulator, monitors, un
   return (
     <section>
       <Intro>
-        See how a monitor fills your vision from where you sit. Pick a class or a specific model and
-        set how far your eyes are from the screen. Turn your head by dragging the monitor in the 3D
-        view, sliding the top view below, or pressing the <kbd>←</kbd> <kbd>→</kbd> keys; pinch (or
-        press <kbd>↑</kbd> <kbd>↓</kbd>) to move closer or farther. The top view shows the same scene
-        from above, with your field of view drawn as rays.
+        See how a monitor fills your vision from where you sit. Turn your head by dragging the monitor
+        in the 3D view, sliding the top view below, or pressing the <kbd>←</kbd> <kbd>→</kbd> keys;
+        pinch (or press <kbd>↑</kbd> <kbd>↓</kbd>) to move closer or farther.
       </Intro>
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
-          <span className="font-medium text-[var(--text-primary)]">Monitor</span>
-          <MonitorPicker
-            value={simulator.selection}
-            onChange={(id) => setSimulator({ selection: id })}
-            custom={myMonitors}
-            aria-label="Monitor"
-            className="min-h-11 cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2 text-sm text-[var(--text-primary)]"
+      {/* Reads "{monitor} at {n} in". The picker takes the leftover width and
+          shrinks first on small screens; "at {n} in" keeps its natural size. */}
+      <div className="mb-4 flex items-center gap-2 text-sm text-[var(--text-secondary)]">
+        <MonitorPicker
+          value={simulator.selection}
+          onChange={(id) => setSimulator({ selection: id })}
+          custom={myMonitors}
+          aria-label="Monitor"
+          className="min-h-11 min-w-0 flex-1 cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2 text-sm text-[var(--text-primary)]"
+        />
+        <span className="flex-none">at</span>
+        <label className="flex flex-none cursor-text items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-2 py-2">
+          <span className="sr-only">Eye-to-screen distance</span>
+          <NumberField
+            value={simulator.distanceIn}
+            onCommit={(v) => v !== null && setSimulator({ distanceIn: v })}
+            parse={(disp) => toInches(disp, unit)}
+            format={(inches) => String(roundToUnit(inches, unit))}
+            clamp={(inches) => clamp(inches, SIMULATOR_DISTANCE_MIN_IN, SIMULATOR_DISTANCE_MAX_IN)}
+            min={fromInches(SIMULATOR_DISTANCE_MIN_IN, unit)}
+            max={fromInches(SIMULATOR_DISTANCE_MAX_IN, unit)}
+            step="any"
+            inputMode="decimal"
+            aria-label="Eye-to-screen distance"
+            className="w-12 bg-transparent text-center tabular-nums text-[var(--text-primary)] outline-none"
           />
+          <span className="text-xs text-[var(--text-secondary)]">{UNIT_LABELS[unit]}</span>
         </label>
       </div>
 
@@ -931,7 +950,6 @@ export default function MonitorSimulator({ simulator, setSimulator, monitors, un
           nominalDistanceIn={simulator.distanceIn}
           headAngle={headAngle}
           unit={unit}
-          onDistance={(inches) => setSimulator({ distanceIn: inches })}
           onRotate={(deg) => {
             cancelHead()
             yawGoalRef.current = deg
