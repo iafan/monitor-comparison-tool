@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { getStaticPages, type StaticPage } from './pages'
 import { ResolutionExplainer } from './ResolutionExplainer'
+import { SizeExplainer } from './SizeExplainer'
 
 const SITE = 'https://monitorture.com'
 
@@ -48,7 +49,9 @@ function documentHtml(page: StaticPage, body: string, cssHref: string): string {
 /** Render every static page to a full, self-contained HTML document. */
 export function renderStaticPages(opts: { cssHref: string }): { path: string; html: string }[] {
   return getStaticPages().map((page) => {
-    const body = renderToStaticMarkup(<ResolutionExplainer {...page.props} />)
+    const body = renderToStaticMarkup(
+      page.kind === 'size' ? <SizeExplainer {...page.props} /> : <ResolutionExplainer {...page.props} />,
+    )
     return { path: page.path, html: documentHtml(page, body, opts.cssHref) }
   })
 }

@@ -15,15 +15,16 @@ export interface ResolutionExplainerProps {
   compareHref: string
 }
 
-/** A one-line read on how a given pixel density feels at a normal desk distance. */
-function ppiNote(ppi: number): string {
+/** A one-line read on how a given pixel density feels at a normal desk distance.
+ *  Shared with the size-based explainer so both pages judge PPI the same way. */
+export function ppiNote(ppi: number): string {
   if (ppi < 95) return 'On the coarse side — pixels and soft text are visible'
   if (ppi < 120) return 'Comfortable — the common desktop sweet spot'
   if (ppi < 150) return 'Sharp — you may prefer slight UI scaling'
   return 'Very sharp — best with OS scaling'
 }
 
-const inch = (n: number) => `${n.toFixed(1)}″`
+export const inch = (n: number) => `${n.toFixed(1)}″`
 
 export function ResolutionExplainer({
   resWidth,

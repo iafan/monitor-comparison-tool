@@ -8,15 +8,22 @@ import { aspectRatioLabel } from '../lib/geometry'
 import { encodeState, type AppState } from '../lib/urlState'
 import type { Monitor } from '../types'
 import type { ResolutionExplainerProps } from './ResolutionExplainer'
+import type { SizeExplainerProps } from './SizeExplainer'
 
-export interface StaticPage {
+interface BasePage {
   /** URL path segment → written to dist/<path>/index.html (single segment, so
    *  in-page links to the app can use "../"). */
   path: string
   title: string
   description: string
-  props: ResolutionExplainerProps
 }
+
+/** A generated page, discriminated by which explainer renders it. `render.tsx`
+ *  switches on `kind` to pick the component; the build script and sitemap are
+ *  kind-agnostic and pick up every page automatically. */
+export type StaticPage =
+  | (BasePage & { kind: 'resolution'; props: ResolutionExplainerProps })
+  | (BasePage & { kind: 'size'; props: SizeExplainerProps })
 
 const resKey = (w: number, h: number) => `${w}x${h}`
 
@@ -60,8 +67,8 @@ function compareHref(classes: MonitorClass[]): string {
   return `../#${encodeState(state)}`
 }
 
-/** Every resolution shared by ≥2 distinct diagonals — the pages worth generating. */
-export function getStaticPages(): StaticPage[] {
+/** Every resolution shared by ≥2 distinct diagonals — "same pixels, different size". */
+function getResolutionPages(): StaticPage[] {
   const byRes = new Map<string, MonitorClass[]>()
   for (const c of MONITOR_CLASSES) {
     const k = resKey(c.resWidth, c.resHeight)
@@ -80,6 +87,7 @@ export function getStaticPages(): StaticPage[] {
     const nameInSlug = MARKETING_NAME[k] ? `${slugify(name)}-` : ''
 
     return {
+      kind: 'resolution' as const,
       path: `${nameInSlug}${resWidth}x${resHeight}`,
       title: `${name} (${resWidth}×${resHeight}) monitor sizes: ${sizeList} compared`,
       description: `The same ${resWidth}×${resHeight} (${name}) resolution at ${sizeList} — see how physical size, pixel density and sharpness change with the diagonal, drawn to scale.`,
@@ -93,4 +101,55 @@ export function getStaticPages(): StaticPage[] {
       },
     }
   })
+}
+
+/** Every diagonal offered at ≥2 distinct resolutions — "same size, different
+ *  pixels". The flip side of the resolution pages: here the panel is one fixed
+ *  physical size and only the pixel density changes. */
+function getSizePages(): StaticPage[] {
+  const byDiag = new Map<number, MonitorClass[]>()
+  for (const c of MONITOR_CLASSES) {
+    ;(byDiag.get(c.diagonal) ?? byDiag.set(c.diagonal, []).get(c.diagonal)!).push(c)
+  }
+
+  const groups = [...byDiag.entries()]
+    .map(([diagonal, classes]) => {
+      // One class per distinct resolution (a diagonal may list several curve
+      // variants of the same resolution), sorted by pixel count ascending.
+      const seen = new Set<string>()
+      const uniqueByRes = [...classes]
+        .sort((a, b) => a.resWidth * a.resHeight - b.resWidth * b.resHeight)
+        .filter((c) => {
+          const k = resKey(c.resWidth, c.resHeight)
+          return seen.has(k) ? false : (seen.add(k), true)
+        })
+      return { diagonal, classes: uniqueByRes }
+    })
+    .filter(({ classes }) => classes.length >= 2)
+    .sort((a, b) => a.diagonal - b.diagonal)
+
+  return groups.map(({ diagonal, classes }) => {
+    const resolutions = classes.map((c) => ({
+      c,
+      name: MARKETING_NAME[resKey(c.resWidth, c.resHeight)] ?? `${c.resWidth}×${c.resHeight}`,
+    }))
+    const nameList = resolutions.map((r) => r.name).join(' vs ')
+
+    return {
+      kind: 'size' as const,
+      path: `${slugify(`${diagonal}`)}-inch-monitor`,
+      title: `${diagonal}″ monitor resolutions compared: ${nameList} (PPI & sharpness)`,
+      description: `How a ${diagonal}-inch monitor looks at ${nameList} — the same physical size at different pixel densities. Compare PPI, pixel pitch and sharpness, drawn to scale.`,
+      props: {
+        diagonal,
+        resolutions,
+        compareHref: compareHref(classes),
+      },
+    }
+  })
+}
+
+/** Every generated static page — resolution-based and size-based. */
+export function getStaticPages(): StaticPage[] {
+  return [...getResolutionPages(), ...getSizePages()]
 }

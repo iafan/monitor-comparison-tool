@@ -33,16 +33,17 @@ export default defineConfig({
         // instead of activating — and reloading — on its own.
         clientsClaim: true,
         skipWaiting: false,
-        // Any in-app navigation resolves to the cached shell when offline.
+        // The SPA is hash-routed, so it only ever lives at the site root — that
+        // is the ONLY navigation that should resolve to the cached shell. An
+        // allowlist of just "/" means every other path is served as-is from the
+        // network: the prerendered SEO pages (their own directories) and static
+        // files (sitemap.xml, robots.txt) are all real pre-generated files, so
+        // the SW must never hand them the shell instead — its relative
+        // (base:'./') asset URLs would 404 under the subpath and blank the page.
+        // An allowlist (vs. a denylist enumerating page URL shapes) needs no
+        // upkeep as new page types are added and can't silently miss one.
         navigateFallback: 'index.html',
-        // …but NOT the prerendered SEO pages (their own `…-WxH/` directory) or
-        // static files (sitemap.xml, robots.txt). Those must be served as-is
-        // from the network, never replaced by the SPA shell. Without this, a
-        // returning visitor's service worker hijacks the navigation and returns
-        // index.html, whose relative (base:'./') asset URLs then 404 under the
-        // subpath — a blank page. The SPA itself is hash-routed, so it only ever
-        // lives at the root and never needs the fallback for a real subpath.
-        navigateFallbackDenylist: [/\d+x\d+\/$/, /\.[^/]+$/],
+        navigateFallbackAllowlist: [/^\/$/],
       },
     }),
   ],
