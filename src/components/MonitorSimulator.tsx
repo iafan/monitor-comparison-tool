@@ -619,6 +619,11 @@ export default function MonitorSimulator({ simulator, setSimulator, monitors, un
   const dragRef = useRef<{ startX: number; startY: number; startAngle: number; startPitch: number } | null>(
     null,
   )
+  // Active pointers on the 3D view + the in-progress pinch (two fingers). A pinch
+  // drives the actual eye distance; one finger rotates.
+  const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map())
+  const pinchRef = useRef<{ startDist: number; startDistanceIn: number } | null>(null)
+  const sceneRef = useRef<HTMLDivElement>(null)
 
   const geo = resolveSelection(simulator.selection) ?? resolveSelection(DEFAULT_SIMULATOR.selection)!
   const { widthIn, heightIn } = physical(geo)
@@ -721,6 +726,18 @@ export default function MonitorSimulator({ simulator, setSimulator, monitors, un
     [cancelDist],
   )
 
+  // Set the actual distance immediately (no tween) — for continuous gestures
+  // (pinch, trackpad zoom). Clamped to the allowed range.
+  const setDistanceLive = useCallback(
+    (to: number) => {
+      cancelDist()
+      const next = clamp(to, SIMULATOR_DISTANCE_MIN_IN, SIMULATOR_DISTANCE_MAX_IN)
+      distGoalRef.current = next
+      setActualDistance(next)
+    },
+    [cancelDist],
+  )
+
   // When the nominal (input) distance changes, ease the actual distance to it.
   useEffect(() => {
     tweenDist(simulator.distanceIn, RECENTER_MS)
@@ -729,12 +746,33 @@ export default function MonitorSimulator({ simulator, setSimulator, monitors, un
   // Dragging the 3D view moves the *monitor*: pull it right and it follows, so the
   // camera turns left; pull it down and it follows, so you look up. Both deltas are
   // inverted relative to the gaze (horizontal is opposite the top view's drag).
+  const pointerGap = () => {
+    const [a, b] = Array.from(pointersRef.current.values())
+    return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0
+  }
   const onPointerDown = (e: React.PointerEvent) => {
-    cancelHead()
-    dragRef.current = { startX: e.clientX, startY: e.clientY, startAngle: headAngle, startPitch: pitch }
+    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
     ;(e.target as Element).setPointerCapture?.(e.pointerId)
+    if (pointersRef.current.size >= 2) {
+      // Second finger down → pinch to zoom. Drop the rotate drag so the head
+      // doesn't lurch, and start from the current actual distance.
+      dragRef.current = null
+      pinchRef.current = { startDist: pointerGap(), startDistanceIn: actualRef.current }
+    } else {
+      cancelHead()
+      dragRef.current = { startX: e.clientX, startY: e.clientY, startAngle: headAngle, startPitch: pitch }
+    }
   }
   const onPointerMove = (e: React.PointerEvent) => {
+    if (pointersRef.current.has(e.pointerId)) {
+      pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    }
+    // Pinch: fingers apart (gap grows) → zoom in → smaller eye distance.
+    if (pinchRef.current && pointersRef.current.size >= 2) {
+      const gap = pointerGap()
+      if (gap > 0) setDistanceLive(pinchRef.current.startDistanceIn * (pinchRef.current.startDist / gap))
+      return
+    }
     const d = dragRef.current
     if (!d) return
     const nextAngle = clamp(
@@ -751,8 +789,18 @@ export default function MonitorSimulator({ simulator, setSimulator, monitors, un
     setHeadAngle(nextAngle)
     setPitch(nextPitch)
   }
-  const endDrag = () => {
-    dragRef.current = null
+  const endDrag = (e: React.PointerEvent) => {
+    pointersRef.current.delete(e.pointerId)
+    if (pointersRef.current.size < 2) pinchRef.current = null
+    if (pointersRef.current.size === 1) {
+      // Lifting one finger of a pinch → resume one-finger rotation from the finger
+      // still down, without jumping.
+      const [pt] = Array.from(pointersRef.current.values())
+      cancelHead()
+      dragRef.current = { startX: pt.x, startY: pt.y, startAngle: yawRef.current, startPitch: pitchRef.current }
+    } else if (pointersRef.current.size === 0) {
+      dragRef.current = null
+    }
   }
   const recenter = () => tweenHead(0, 0, RECENTER_MS)
 
@@ -782,13 +830,30 @@ export default function MonitorSimulator({ simulator, setSimulator, monitors, un
     return () => window.removeEventListener('keydown', onKey)
   }, [tweenHead, tweenDist])
 
+  // Trackpad pinch arrives as a wheel event with ctrlKey set. A non-passive
+  // listener is required to preventDefault (otherwise the browser page-zooms).
+  // Plain scrolling (no ctrlKey) is left untouched.
+  useEffect(() => {
+    const el = sceneRef.current
+    if (!el) return
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey) return
+      e.preventDefault()
+      // Pinch out → deltaY < 0 → zoom in → smaller eye distance.
+      setDistanceLive(actualRef.current * Math.exp(e.deltaY * 0.01))
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [setDistanceLive])
+
   return (
     <section>
       <Intro>
         See how a monitor fills your vision from where you sit. Pick a class or a specific model and
         set how far your eyes are from the screen. Turn your head by dragging the monitor in the 3D
-        view, sliding the top view below, or pressing the <kbd>←</kbd> <kbd>→</kbd> keys — the top
-        view shows the same scene from above, with your field of view drawn as rays.
+        view, sliding the top view below, or pressing the <kbd>←</kbd> <kbd>→</kbd> keys; pinch (or
+        press <kbd>↑</kbd> <kbd>↓</kbd>) to move closer or farther. The top view shows the same scene
+        from above, with your field of view drawn as rays.
       </Intro>
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -806,12 +871,13 @@ export default function MonitorSimulator({ simulator, setSimulator, monitors, un
 
       {/* First-person 3D view. Fixed 3:2 (human-field proportion) so the horizontal FOV is stable. */}
       <div
+        ref={sceneRef}
         className="relative aspect-[3/2] w-full cursor-grab touch-none overflow-hidden rounded-xl border border-[var(--border)] select-none active:cursor-grabbing"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
-        title="Drag to move the monitor"
+        title="Drag to move the monitor · pinch to zoom"
       >
         <FrontView
           widthIn={widthIn}
