@@ -443,6 +443,7 @@ function TopDown({
   headAngle,
   unit,
   onRotate,
+  onReset,
 }: {
   widthIn: number
   /** The actual (keyboard-controlled) eye distance — drives the eye and rays. */
@@ -453,6 +454,8 @@ function TopDown({
   headAngle: number
   unit: Unit
   onRotate: (deg: number) => void
+  /** Ease the actual distance back to the nominal (set) distance. */
+  onReset: () => void
 }) {
   // Drag left/right anywhere on the diagram to aim the camera (direct: drag
   // right → camera turns right).
@@ -606,6 +609,36 @@ function TopDown({
           )
         })()}
       </svg>
+
+      {/* Reset the actual distance to the set (nominal) one — shown only when moved. */}
+      {distanceIn !== nominalDistanceIn && (
+        <button
+          type="button"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={onReset}
+          title="Reset to the set distance"
+          className="absolute right-2 bottom-2 flex cursor-pointer items-center gap-1.5 rounded-md bg-black/55 px-2 py-1 text-xs text-white hover:bg-black/70"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="size-3.5"
+            aria-hidden="true"
+          >
+            <path d="m17 3-5 5-5-5h10" />
+            <path d="m17 21-5-5-5 5h10" />
+            <path d="M4 12H2" />
+            <path d="M10 12H8" />
+            <path d="M16 12h-2" />
+            <path d="M22 12h-2" />
+          </svg>
+          Reset
+        </button>
+      )}
     </div>
   )
 }
@@ -955,6 +988,7 @@ export default function MonitorSimulator({ simulator, setSimulator, monitors, un
             yawGoalRef.current = deg
             setHeadAngle(deg)
           }}
+          onReset={() => tweenDist(simulator.distanceIn, RECENTER_MS)}
         />
         <p className="text-xs text-[var(--text-muted)]">
           <kbd>←</kbd> <kbd>→</kbd> turn your head · <kbd>↑</kbd> <kbd>↓</kbd> move closer / farther
