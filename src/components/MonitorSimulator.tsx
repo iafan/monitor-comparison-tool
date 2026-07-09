@@ -972,7 +972,6 @@ export default function MonitorSimulator({ simulator, setSimulator, monitors, un
 
       {/* Top-down projection — also the primary head-turn control. */}
       <div className="mt-6 flex flex-col items-center gap-2">
-        <h2 className="self-start text-sm font-semibold text-[var(--text-primary)]">Top view</h2>
         <TopDown
           widthIn={widthIn}
           curveRadius={geo.curveRadius}
