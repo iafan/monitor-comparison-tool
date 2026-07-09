@@ -115,7 +115,18 @@ export function useAppState(): AppStore {
   // Persistence is off while showing a URL-loaded view; the first mutation turns it on.
   const persist = useRef(!init.current.fromUrl)
 
-  const resolvedTheme: Theme = state.themeChoice ?? systemTheme()
+  // Track the OS light/dark preference live, so Auto mode follows it while the app
+  // is open (not just on load).
+  const [system, setSystem] = useState<Theme>(systemTheme)
+  useEffect(() => {
+    const mq = window.matchMedia?.('(prefers-color-scheme: dark)')
+    if (!mq) return
+    const onChange = () => setSystem(mq.matches ? 'dark' : 'light')
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+
+  const resolvedTheme: Theme = state.themeChoice ?? system
 
   // Monitors are always exposed and serialized in a stable order (physical area,
   // then name) — independent of the order they were added. Everything downstream
