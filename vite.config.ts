@@ -13,9 +13,11 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      // Update silently in the background — no reload prompt.
-      registerType: 'autoUpdate',
-      injectRegister: 'auto',
+      // We drive the update ourselves (see UpdatePrompt): show a brief overlay,
+      // then reload — unless the user dismisses it. 'prompt' keeps the plugin
+      // from silently reloading, and we register the SW via useRegisterSW.
+      registerType: 'prompt',
+      injectRegister: null,
       // The app ships its own public/manifest.webmanifest (linked from
       // index.html), so let the plugin manage only the service worker.
       manifest: false,
@@ -26,6 +28,11 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         cleanupOutdatedCaches: true,
+        // Control the page on first install (offline works from the first visit).
+        // skipWaiting stays off so a new version waits for our update overlay
+        // instead of activating — and reloading — on its own.
+        clientsClaim: true,
+        skipWaiting: false,
         // Any in-app navigation resolves to the cached shell when offline.
         navigateFallback: 'index.html',
       },

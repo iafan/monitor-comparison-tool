@@ -1,6 +1,7 @@
 import { lazy, Suspense, useState } from 'react'
 import { TopMenu } from './components/TopMenu'
 import { SettingsModal } from './components/SettingsModal'
+import { UpdatePrompt } from './components/UpdatePrompt'
 import { useAppState } from './hooks/useAppState'
 
 // Every tool is code-split into its own chunk so the initial load is just the
@@ -28,6 +29,7 @@ export function App() {
 
   return (
     <>
+      <UpdatePrompt />
       <TopMenu tool={app.tool} onToolChange={app.setTool} theme={app.theme} onOpenSettings={() => setSettingsOpen(true)} />
       {settingsOpen && (
         <SettingsModal
