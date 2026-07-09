@@ -60,11 +60,13 @@ export function MyMonitors({
         emptyText="No monitors yet. Add a monitor to build your list — you can then use it in the other tools."
       />
 
-      {/* Back up / transfer the library as JSON. */}
+      {/* Back up / transfer the library as JSON. Save only makes sense with entries. */}
       <div className="flex gap-4">
-        <button type="button" onClick={() => setIo('save')} className={linkClass}>
-          Save
-        </button>
+        {myMonitors.length > 0 && (
+          <button type="button" onClick={() => setIo('save')} className={linkClass}>
+            Save
+          </button>
+        )}
         <button type="button" onClick={() => setIo('import')} className={linkClass}>
           Import
         </button>
