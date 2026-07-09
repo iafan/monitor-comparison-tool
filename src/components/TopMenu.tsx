@@ -15,7 +15,9 @@ const TOOL_LABELS: Record<Tool, string> = {
   simulator: 'Monitor Simulator in 3D',
 }
 
-const TOOL_ORDER: Tool[] = ['comparison', 'simulator', 'myMonitors', 'check', 'geometry']
+// My Monitors leads (it's the library the other tools draw from), set off by a
+// separator. The default tool is still comparison — order here doesn't change it.
+const TOOL_ORDER: Tool[] = ['myMonitors', 'comparison', 'simulator', 'check', 'geometry']
 
 export function TopMenu({ tool, onToolChange, theme, onOpenSettings }: Props) {
   const isDark = theme === 'dark'
@@ -51,11 +53,22 @@ export function TopMenu({ tool, onToolChange, theme, onOpenSettings }: Props) {
             onChange={(e) => onToolChange(e.target.value as Tool)}
             className="min-h-11 cursor-pointer appearance-none rounded-lg border border-[var(--border)] bg-[var(--surface-1)] py-2 pr-9 pl-3 text-sm font-semibold text-[var(--text-primary)]"
           >
-            {TOOL_ORDER.map((t) => (
-              <option key={t} value={t}>
-                {TOOL_LABELS[t]}
-              </option>
-            ))}
+            {TOOL_ORDER.flatMap((t, i) => {
+              const option = (
+                <option key={t} value={t}>
+                  {TOOL_LABELS[t]}
+                </option>
+              )
+              // A disabled "rule" option after My Monitors — native selects can't hold an <hr>.
+              return i === 0
+                ? [
+                    option,
+                    <option key="sep" disabled>
+                      ──────────
+                    </option>,
+                  ]
+                : [option]
+            })}
           </select>
           {/* Custom chevron, since appearance-none removes the native one. */}
           <svg
