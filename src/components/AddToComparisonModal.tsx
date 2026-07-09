@@ -149,8 +149,9 @@ export function AddToComparisonModal({ myMonitors, onAdd, onClose, onGoToMyMonit
           })}
         </div>
 
-        {/* Fixed-height body so switching tabs doesn't resize the dialog. */}
-        <div className="flex min-h-[360px] flex-col gap-3.5">
+        {/* Stable body height so switching tabs never resizes the dialog: track the
+            viewport (good on mobile) but floor and cap it; lists scroll within. */}
+        <div className="flex h-[60vh] max-h-[460px] min-h-[320px] flex-col gap-3.5">
           {source === 'my' && (
             <div className={`${labelClass} min-h-0 flex-1`}>
               {myMonitors.length === 0 ? (
