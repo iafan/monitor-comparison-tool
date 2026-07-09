@@ -1,8 +1,10 @@
 import { physical } from '../lib/geometry'
 import type { MonitorClass } from '../data'
 
-/** Distinct outline colors per panel (self-contained — not reliant on the app palette). */
-export const PANEL_COLORS = ['#2f6bff', '#12a150', '#e0642a', '#8a4fff', '#e0a92a', '#e563b4']
+/** Distinct outline colors per panel (self-contained — not reliant on the app
+ *  palette). Eight entries so the curvature concept page (flat + 7 radii) never
+ *  wraps and repeats a color. */
+export const PANEL_COLORS = ['#2f6bff', '#12a150', '#e0642a', '#8a4fff', '#e0a92a', '#e563b4', '#0891b2', '#475569']
 
 interface Props {
   classes: MonitorClass[]

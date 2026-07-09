@@ -1,5 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { getStaticPages, type StaticPage } from './pages'
+import { CurvatureConcept } from './CurvatureConcept'
+import { CurveExplainer } from './CurveExplainer'
 import { ResolutionExplainer } from './ResolutionExplainer'
 import { SizeExplainer } from './SizeExplainer'
 
@@ -49,9 +51,21 @@ function documentHtml(page: StaticPage, body: string, cssHref: string): string {
 /** Render every static page to a full, self-contained HTML document. */
 export function renderStaticPages(opts: { cssHref: string }): { path: string; html: string }[] {
   return getStaticPages().map((page) => {
-    const body = renderToStaticMarkup(
-      page.kind === 'size' ? <SizeExplainer {...page.props} /> : <ResolutionExplainer {...page.props} />,
-    )
+    let el
+    switch (page.kind) {
+      case 'size':
+        el = <SizeExplainer {...page.props} />
+        break
+      case 'curve':
+        el = <CurveExplainer {...page.props} />
+        break
+      case 'curve-concept':
+        el = <CurvatureConcept {...page.props} />
+        break
+      default:
+        el = <ResolutionExplainer {...page.props} />
+    }
+    const body = renderToStaticMarkup(el)
     return { path: page.path, html: documentHtml(page, body, opts.cssHref) }
   })
 }
