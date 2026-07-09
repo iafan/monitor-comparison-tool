@@ -4,11 +4,15 @@ function gcd(a: number, b: number): number {
   return b === 0 ? a : gcd(b, a % b)
 }
 
-// The aspect ratios monitors are actually marketed by. A panel's exact reduced
-// ratio (e.g. 43:18) is matched to the nearest of these so the table can show
-// the familiar label (21:9). Kept deliberately curated — adding near-duplicates
-// (like 12:5, which sits between 21:9 and the ultrawides) would steal the match.
-const MARKETING_RATIOS: { label: string; w: number; h: number }[] = [
+// The aspect ratios monitors are actually marketed by.
+//
+// `exactOnly` ratios are used only when the panel's reduced fraction equals them
+// exactly — never as a nearest approximation. This is essential for 24:10 (=12:5,
+// e.g. 3840×1600): by decimal it sits *between* the 21:9 ultrawides (43:18≈2.389,
+// 64:27≈2.370) and would steal their match, yet those are marketed 21:9, not
+// 24:10. Matching exact fractions first, then nearest among the non-exact-only
+// ratios, keeps 3840×1600 → "24:10" while 43:18/64:27 stay "21:9".
+const MARKETING_RATIOS: { label: string; w: number; h: number; exactOnly?: boolean }[] = [
   { label: '1:1', w: 1, h: 1 },
   { label: '5:4', w: 5, h: 4 },
   { label: '4:3', w: 4, h: 3 },
@@ -16,6 +20,7 @@ const MARKETING_RATIOS: { label: string; w: number; h: number }[] = [
   { label: '16:10', w: 16, h: 10 },
   { label: '16:9', w: 16, h: 9 },
   { label: '21:9', w: 21, h: 9 },
+  { label: '24:10', w: 24, h: 10, exactOnly: true },
   { label: '32:10', w: 32, h: 10 },
   { label: '32:9', w: 32, h: 9 },
 ]
@@ -26,30 +31,32 @@ const MARKETING_RATIOS: { label: string; w: number; h: number }[] = [
 const RATIO_TOLERANCE = 0.06
 
 /**
- * A human aspect-ratio label. Reduces the resolution to lowest terms, then finds
- * the closest marketing ratio: an exact match shows just the marketing label
- * ("16:10"); a near match shows marketing plus the real reduction ("21:9
- * (43:18)"); anything else falls back to the plain reduction.
+ * A human aspect-ratio label. Reduces the resolution to lowest terms, then: an
+ * exact marketing match shows just the label ("16:10", "24:10"); a near match
+ * shows marketing plus the real reduction ("21:9 (43:18)"); anything else falls
+ * back to the plain reduction.
  */
 export function aspectRatioLabel(resWidth: number, resHeight: number): string {
   const g = gcd(resWidth, resHeight) || 1
   const real = `${resWidth / g}:${resHeight / g}`
   const value = resWidth / resHeight
 
+  // Exact fraction match wins outright (includes exact-only ratios like 24:10).
+  const exact = MARKETING_RATIOS.find((m) => m.w * resHeight === m.h * resWidth)
+  if (exact) return exact.label
+
+  // Otherwise the nearest "family" ratio, ignoring exact-only ones.
   let best: (typeof MARKETING_RATIOS)[number] | null = null
   let bestDiff = Infinity
   for (const m of MARKETING_RATIOS) {
+    if (m.exactOnly) continue
     const diff = Math.abs(value - m.w / m.h)
     if (diff < bestDiff) {
       bestDiff = diff
       best = m
     }
   }
-  if (!best) return real
-
-  // Exact when the marketing fraction equals the panel's fraction.
-  if (best.w * resHeight === best.h * resWidth) return best.label
-  if (bestDiff / (best.w / best.h) <= RATIO_TOLERANCE) return `${best.label} (${real})`
+  if (best && bestDiff / (best.w / best.h) <= RATIO_TOLERANCE) return `${best.label} (${real})`
   return real
 }
 
