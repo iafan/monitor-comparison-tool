@@ -62,6 +62,7 @@ export function App() {
               addMyMonitor={app.addMyMonitor}
               updateMyMonitor={app.updateMyMonitor}
               deleteMyMonitor={app.deleteMyMonitor}
+              importMyMonitors={app.importMyMonitors}
               unit={app.preferences.unit}
             />
           )}

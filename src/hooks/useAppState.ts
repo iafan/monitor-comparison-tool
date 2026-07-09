@@ -33,6 +33,7 @@ import {
   uid,
 } from '../lib/storage'
 import { applyDecoded, decodeState, encodeState, type AppState } from '../lib/urlState'
+import { monitorKey } from '../lib/monitorsIo'
 
 function systemTheme(): Theme {
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
@@ -85,6 +86,8 @@ export interface AppStore {
   addMyMonitor: (input: MonitorInput) => void
   updateMyMonitor: (id: string, input: MonitorInput) => void
   deleteMyMonitor: (id: string) => void
+  /** Bulk-add imported monitors, skipping duplicates. Returns how many were added/skipped. */
+  importMyMonitors: (inputs: MonitorInput[]) => { added: number; skipped: number }
   monitors: Monitor[]
   addMonitor: (input: MonitorInput) => void
   updateMonitor: (id: string, input: MonitorInput) => void
@@ -210,6 +213,30 @@ export function useAppState(): AppStore {
     [mutateLibrary],
   )
 
+  const importMyMonitors = useCallback(
+    (inputs: MonitorInput[]) => {
+      const seen = new Set(state.myMonitors.map(monitorKey))
+      const added: Monitor[] = []
+      let skipped = 0
+      for (const input of inputs) {
+        const key = monitorKey(input)
+        if (seen.has(key)) {
+          skipped++
+          continue
+        }
+        seen.add(key)
+        added.push({ ...input, id: uid(), visible: true })
+      }
+      if (added.length > 0) {
+        const next = [...state.myMonitors, ...added]
+        saveMyMonitors(next)
+        setState((s) => ({ ...s, myMonitors: next }))
+      }
+      return { added: added.length, skipped }
+    },
+    [state.myMonitors],
+  )
+
   const setAlignment = useCallback((alignment: Alignment) => mutate((s) => ({ ...s, alignment })), [mutate])
 
   const setTopViewAlign = useCallback(
@@ -271,6 +298,7 @@ export function useAppState(): AppStore {
     addMyMonitor,
     updateMyMonitor,
     deleteMyMonitor,
+    importMyMonitors,
     monitors,
     addMonitor,
     updateMonitor,
