@@ -942,9 +942,6 @@ export default function MonitorSimulator({ simulator, setSimulator, monitors, un
           pitch={pitch}
           dark={theme === 'dark'}
         />
-        <div className="pointer-events-none absolute top-2 left-2 rounded-md bg-black/55 px-2 py-1 text-xs text-white">
-          {geo.name}
-        </div>
         {/* Recenter control — shown only when the view is off-center. */}
         {!centered && (
           <button
