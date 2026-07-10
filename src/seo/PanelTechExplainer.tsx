@@ -1,4 +1,4 @@
-import { PANEL_COLORS } from './SizeComparisonSvg'
+import { PolarizerDiagram } from './PolarizerDiagram'
 import { PanelRatingTable } from './PanelRatingTable'
 import { PanelStackSvg } from './PanelStackSvg'
 import { PANEL_TECHS, PANEL_TYPES_HUB_PATH, VISUAL_ARTIFACTS_PATH, techBySlug, type ProCon } from './panelTech'
@@ -34,9 +34,9 @@ function ProConList({ items, kind }: { items: ProCon[]; kind: 'pro' | 'con' }) {
 
 export function PanelTechExplainer({ slug }: PanelTechExplainerProps) {
   const tech = techBySlug(slug)
-  const color = PANEL_COLORS[PANEL_TECHS.indexOf(tech) % PANEL_COLORS.length]
   const others = PANEL_TECHS.filter((t) => t.slug !== slug)
   const emissive = tech.family === 'Self-emissive'
+  const crystal = tech.slug === 'ips-panel-monitors' ? 'ips' : tech.slug === 'va-panel-monitors' ? 'va' : null
 
   return (
     <div className="mx-auto max-w-[820px] px-4 py-6 text-[var(--text-primary)]">
@@ -74,7 +74,7 @@ export function PanelTechExplainer({ slug }: PanelTechExplainerProps) {
       <p className="mt-3 text-[var(--text-secondary)]">{tech.tagline}</p>
 
       <figure className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] p-4">
-        <PanelStackSvg emissive={emissive} color={color} zonedBacklight={tech.slug === 'mini-led-monitors'} />
+        <PanelStackSvg emissive={emissive} zonedBacklight={tech.slug === 'mini-led-monitors'} />
         <figcaption className="mt-2 text-center text-xs text-[var(--text-muted)]">
           {emissive
             ? 'Each pixel emits its own light — one that is off emits nothing, so black is truly black, with no backlight to leak or bloom.'
@@ -83,6 +83,17 @@ export function PanelTechExplainer({ slug }: PanelTechExplainerProps) {
               : 'The always-on backlight is only ever blocked, never switched off — so a little light always leaks through “black”, raising it.'}
         </figcaption>
       </figure>
+
+      {crystal && (
+        <figure className="mt-4 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] p-4">
+          <PolarizerDiagram variant={crystal} />
+          <figcaption className="mt-2 text-center text-xs text-[var(--text-muted)]">
+            {crystal === 'ips'
+              ? 'IPS keeps its crystals in the screen’s plane and rotates them there. Between crossed polarizers that rotation twists the light’s polarization to pass the front filter (bright) or leaves it blocked (dark). Because the rotation happens in the plane you view head-on, the image barely shifts off-axis — wide, stable angles — but the in-plane layout can’t block the backlight perfectly, so blacks look greyer (IPS glow).'
+              : 'At rest, VA crystals stand along the light’s path, so they don’t twist its polarization — the crossed front polarizer blocks it and you get a deep black. Voltage tilts them; birefringence then rotates the polarization and light passes (bright). Because that depends on a tilt you view edge-on, contrast and color shift as you move off-axis — VA’s narrow-angle weakness.'}
+          </figcaption>
+        </figure>
+      )}
 
       <section className="mt-8 flex flex-col gap-3 text-[var(--text-secondary)]">
         <h2 className="text-lg font-semibold text-[var(--text-primary)]">How it works</h2>

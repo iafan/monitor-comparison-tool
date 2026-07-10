@@ -2,8 +2,6 @@ interface Props {
   /** Self-emissive panels (OLED) draw the per-pixel diagram; backlit panels
    *  (VA, IPS, mini-LED) draw the layered light-path cross-section. */
   emissive: boolean
-  /** Accent color for the diagram (the panel's column color). */
-  color: string
   /** Backlit only: draw the backlight as independently dimmable zones (mini-LED),
    *  some switched off, rather than a uniform "always on" backlight. */
   zonedBacklight?: boolean
@@ -18,7 +16,7 @@ interface Props {
  * server-side and adapts to light/dark. The prose takeaway lives in the page's
  * figcaption (HTML wraps; fixed-width SVG text would clip).
  */
-export function PanelStackSvg({ emissive, color, zonedBacklight = false }: Props) {
+export function PanelStackSvg({ emissive, zonedBacklight = false }: Props) {
   const W = 560
 
   if (emissive) {
@@ -90,6 +88,14 @@ export function PanelStackSvg({ emissive, color, zonedBacklight = false }: Props
   // shutter shows per-pixel cells blocking or passing; the filter shows RGB
   // stripes. Label sits left, illustration right, so text never clips.
   const YELLOW = '#f5c518'
+  // A varied (non-periodic) shutter open/closed pattern, shared with the filter:
+  // a closed subpixel gets no light, so its color stripe above is dimmed to ~25%.
+  const OPEN = [
+    true, true, false, true, true, false, false, true, false, true, true, true,
+    false, false, true, false, true, true, false, true, false, false, true, true,
+  ]
+  const RGB_BRIGHT = ['#e5484d', '#30a46c', '#3b82f6']
+  const RGB_DARK = ['#391213', '#0c291b', '#0f203d'] // ~25% brightness (dimmed subpixel)
   const M = 40
   const layerW = W - 2 * M
   const layerH = 56
@@ -123,7 +129,7 @@ export function PanelStackSvg({ emissive, color, zonedBacklight = false }: Props
         const ih = layerH - 20
         return (
           <g key={r.key}>
-            <rect x={M} y={y} width={layerW} height={layerH} rx={8} fill="none" stroke={color} strokeOpacity={0.4} />
+            <rect x={M} y={y} width={layerW} height={layerH} rx={8} fill="none" stroke="var(--border)" />
             <text x={M + 12} y={y + layerH / 2 - 2} fontSize={13} fontWeight={600} fill="var(--text-primary)">
               {r.label}
             </text>
@@ -132,6 +138,8 @@ export function PanelStackSvg({ emissive, color, zonedBacklight = false }: Props
             </text>
 
             {r.key === 'filter' &&
+              // One stripe per subpixel; dimmed to ~25% where the shutter below is
+              // closed (no light reaches that subpixel's color).
               Array.from({ length: 24 }).map((_, k) => (
                 <rect
                   key={k}
@@ -139,27 +147,24 @@ export function PanelStackSvg({ emissive, color, zonedBacklight = false }: Props
                   y={iy}
                   width={iw / 24 + 0.6}
                   height={ih}
-                  fill={['#e5484d', '#30a46c', '#3b82f6'][k % 3]}
+                  fill={(OPEN[k] ? RGB_BRIGHT : RGB_DARK)[k % 3]}
                 />
               ))}
 
             {r.key === 'shutter' &&
-              // One cell per subpixel, aligned 1:1 with the RGB stripes above:
-              // each subpixel's crystal independently blocks (black) or passes (clear).
+              // One cell per subpixel, aligned 1:1 with the stripes above: open
+              // cells (light) pass light, closed cells (dark) block it. Open cells
+              // are drawn light — not transparent — so they read in dark mode too.
               Array.from({ length: 24 }).map((_, k) => {
                 const cw = iw / 24
-                const blocked = (k * 7) % 5 < 2 // a mixed, deterministic open/closed pattern
                 return (
                   <rect
                     key={k}
-                    x={ix + k * cw + 0.75}
+                    x={ix + (k * iw) / 24}
                     y={iy}
-                    width={cw - 1.5}
+                    width={cw + 0.6}
                     height={ih}
-                    fill={blocked ? '#0b0b0b' : 'none'}
-                    fillOpacity={blocked ? 0.85 : 0}
-                    stroke="var(--text-muted)"
-                    strokeOpacity={0.35}
+                    fill={OPEN[k] ? '#d7dbe0' : '#15171a'}
                   />
                 )
               })}
@@ -170,7 +175,7 @@ export function PanelStackSvg({ emissive, color, zonedBacklight = false }: Props
                 // mini-LED (a zone is far coarser than a pixel, hence blooming).
                 Array.from({ length: 2 }).map((_, k) => {
                   const zw = iw / 2
-                  const on = k === 0 // one zone lit, one dimmed off
+                  const on = k === 0 // one zone lit, one dimmed (not off-black)
                   return (
                     <rect
                       key={k}
@@ -179,8 +184,7 @@ export function PanelStackSvg({ emissive, color, zonedBacklight = false }: Props
                       width={zw - 3}
                       height={ih}
                       rx={2}
-                      fill={on ? YELLOW : '#0b0b0b'}
-                      fillOpacity={on ? 1 : 0.8}
+                      fill={on ? YELLOW : '#9a7a10'}
                       stroke="var(--text-muted)"
                       strokeOpacity={0.5}
                     />
