@@ -32,6 +32,11 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
+      # Notify IndexNow engines (Bing/Yandex/…) of the current URL set. Best
+      # effort — the script never fails, and continue-on-error keeps the deploy
+      # green even if the ping endpoint is unreachable.
+      - run: npm run ping-indexnow
+        continue-on-error: true
 
   deploy:
     needs: build
