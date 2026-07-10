@@ -103,11 +103,13 @@ export const PRESETS: Preset[] = [
   { label: '5K2K WUHD — 5120 × 2160', resWidth: 5120, resHeight: 2160 },
   { label: '5K — 5120 × 2880', resWidth: 5120, resHeight: 2880 },
   { label: '6K — 6016 × 3384', resWidth: 6016, resHeight: 3384 },
+  { label: '6K (Super UltraWide) — 6144 × 2560', resWidth: 6144, resHeight: 2560 },
+  { label: '6K — 6144 × 3456', resWidth: 6144, resHeight: 3456 },
   { label: 'Dual UHD — 7680 × 2160', resWidth: 7680, resHeight: 2160 },
 ]
 
 /** Typical curved-monitor radii in mm; smaller = more aggressively curved. */
-export const CURVATURE_PRESETS = [800, 1000, 1500, 1800, 2300, 2500, 3800]
+export const CURVATURE_PRESETS = [800, 1000, 1500, 1700, 1800, 1900, 2300, 2500, 3800, 4200]
 
 /**
  * Builds a seed monitor from a generic class. The name is the class's default

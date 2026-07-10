@@ -34,6 +34,9 @@ export const MONITOR_CLASSES: MonitorClass[] = [
   { id: '24-1920x1080', diagonal: 24, resWidth: 1920, resHeight: 1080, curveRadius: null },
   { id: '24-1920x1200', diagonal: 24, resWidth: 1920, resHeight: 1200, curveRadius: null },
   { id: '24-2560x1440', diagonal: 24, resWidth: 2560, resHeight: 1440, curveRadius: null },
+  // 26.5″
+  { id: '26.5-2560x1440', diagonal: 26.5, resWidth: 2560, resHeight: 1440, curveRadius: null },
+  { id: '26.5-3840x2160', diagonal: 26.5, resWidth: 3840, resHeight: 2160, curveRadius: null },
   // 27″
   { id: '27-1920x1080', diagonal: 27, resWidth: 1920, resHeight: 1080, curveRadius: null },
   { id: '27-1920x1200', diagonal: 27, resWidth: 1920, resHeight: 1200, curveRadius: null },
@@ -46,12 +49,15 @@ export const MONITOR_CLASSES: MonitorClass[] = [
   { id: '30-2560x1600', diagonal: 30, resWidth: 2560, resHeight: 1600, curveRadius: null },
   // 31.5″ / 32″
   { id: '31.5-2560x1440', diagonal: 31.5, resWidth: 2560, resHeight: 1440, curveRadius: null },
+  { id: '31.5-3840x2160', diagonal: 31.5, resWidth: 3840, resHeight: 2160, curveRadius: null },
+  { id: '31.5-6016x3384', diagonal: 31.5, resWidth: 6016, resHeight: 3384, curveRadius: null },
   { id: '32-2560x1440', diagonal: 32, resWidth: 2560, resHeight: 1440, curveRadius: null },
   { id: '32-2560x1440-1000r', diagonal: 32, resWidth: 2560, resHeight: 1440, curveRadius: 1000 },
   { id: '32-3840x2160', diagonal: 32, resWidth: 3840, resHeight: 2160, curveRadius: null },
   { id: '32-3840x2160-1700r', diagonal: 32, resWidth: 3840, resHeight: 2160, curveRadius: 1700 },
   { id: '32-3840x2400', diagonal: 32, resWidth: 3840, resHeight: 2400, curveRadius: null },
   { id: '32-6016x3384', diagonal: 32, resWidth: 6016, resHeight: 3384, curveRadius: null },
+  { id: '32-6144x3456', diagonal: 32, resWidth: 6144, resHeight: 3456, curveRadius: null },
   // 34″ (ultrawide)
   { id: '34-2560x1080-1500r', diagonal: 34, resWidth: 2560, resHeight: 1080, curveRadius: 1500 },
   { id: '34-3440x1440', diagonal: 34, resWidth: 3440, resHeight: 1440, curveRadius: null },
@@ -59,9 +65,11 @@ export const MONITOR_CLASSES: MonitorClass[] = [
   { id: '34-3440x1440-1000r', diagonal: 34, resWidth: 3440, resHeight: 1440, curveRadius: 1000 },
   { id: '34-3440x1440-1500r', diagonal: 34, resWidth: 3440, resHeight: 1440, curveRadius: 1500 },
   { id: '34-3440x1440-1800r', diagonal: 34, resWidth: 3440, resHeight: 1440, curveRadius: 1800 },
+  { id: '34-3440x1440-1900r', diagonal: 34, resWidth: 3440, resHeight: 1440, curveRadius: 1900 },
   // 37.5″ / 39″ (ultrawide)
   { id: '37.5-3840x1600-2300r', diagonal: 37.5, resWidth: 3840, resHeight: 1600, curveRadius: 2300 },
   { id: '39-3440x1440-800r', diagonal: 39, resWidth: 3440, resHeight: 1440, curveRadius: 800 },
+  { id: '39-5120x2160-1500r', diagonal: 39, resWidth: 5120, resHeight: 2160, curveRadius: 1500 },
   // 40″ (ultrawide 5K2K)
   { id: '40-5120x2160', diagonal: 40, resWidth: 5120, resHeight: 2160, curveRadius: null },
   { id: '40-5120x2160-2500r', diagonal: 40, resWidth: 5120, resHeight: 2160, curveRadius: 2500 },
@@ -75,6 +83,9 @@ export const MONITOR_CLASSES: MonitorClass[] = [
   { id: '49-5120x1440-1000r', diagonal: 49, resWidth: 5120, resHeight: 1440, curveRadius: 1000 },
   { id: '49-5120x1440-1800r', diagonal: 49, resWidth: 5120, resHeight: 1440, curveRadius: 1800 },
   { id: '49-5120x1440-3800r', diagonal: 49, resWidth: 5120, resHeight: 1440, curveRadius: 3800 },
+  // 51.5″ / 52″ (super ultrawide 6K)
+  { id: '51.5-6144x2560-4200r', diagonal: 51.5, resWidth: 6144, resHeight: 2560, curveRadius: 4200 },
+  { id: '52-5120x2160-1000r', diagonal: 52, resWidth: 5120, resHeight: 2160, curveRadius: 1000 },
   // 57″ (super ultrawide Dual 4K)
   { id: '57-7680x2160-1000r', diagonal: 57, resWidth: 7680, resHeight: 2160, curveRadius: 1000 },
 ]

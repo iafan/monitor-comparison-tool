@@ -4,21 +4,47 @@ import type { MonitorClass, MonitorModel, SourceLink } from './types'
 
 // One import per class file under models/. When you add a class, add its file
 // here too. (Kept explicit rather than glob-based so it type-checks under tsc.)
+import { models as models_24_1920x1080 } from './models/24-1920x1080'
+import { models as models_24_1920x1200 } from './models/24-1920x1200'
+import { models as models_26_5_2560x1440 } from './models/26.5-2560x1440'
+import { models as models_26_5_3840x2160 } from './models/26.5-3840x2160'
 import { models as models_27_2560x1440 } from './models/27-2560x1440'
+import { models as models_27_3840x2160 } from './models/27-3840x2160'
+import { models as models_27_5120x2880 } from './models/27-5120x2880'
 import { models as models_31_5_2560x1440 } from './models/31.5-2560x1440'
+import { models as models_31_5_3840x2160 } from './models/31.5-3840x2160'
+import { models as models_31_5_6016x3384 } from './models/31.5-6016x3384'
 import { models as models_32_2560x1440 } from './models/32-2560x1440'
+import { models as models_32_6144x3456 } from './models/32-6144x3456'
 import { models as models_34_3440x1440_800r } from './models/34-3440x1440-800r'
 import { models as models_34_3440x1440_1800r } from './models/34-3440x1440-1800r'
+import { models as models_34_3440x1440_1900r } from './models/34-3440x1440-1900r'
 import { models as models_37_5_3840x1600_2300r } from './models/37.5-3840x1600-2300r'
+import { models as models_39_5120x2160_1500r } from './models/39-5120x2160-1500r'
+import { models as models_51_5_6144x2560_4200r } from './models/51.5-6144x2560-4200r'
+import { models as models_52_5120x2160_1000r } from './models/52-5120x2160-1000r'
 
 /** Every catalogued specific model, flattened across the per-class files. */
 export const MONITOR_MODELS: MonitorModel[] = [
+  ...models_24_1920x1080,
+  ...models_24_1920x1200,
+  ...models_26_5_2560x1440,
+  ...models_26_5_3840x2160,
   ...models_27_2560x1440,
+  ...models_27_3840x2160,
+  ...models_27_5120x2880,
   ...models_31_5_2560x1440,
+  ...models_31_5_3840x2160,
+  ...models_31_5_6016x3384,
   ...models_32_2560x1440,
+  ...models_32_6144x3456,
   ...models_34_3440x1440_800r,
   ...models_34_3440x1440_1800r,
+  ...models_34_3440x1440_1900r,
   ...models_37_5_3840x1600_2300r,
+  ...models_39_5120x2160_1500r,
+  ...models_51_5_6144x2560_4200r,
+  ...models_52_5120x2160_1000r,
 ]
 
 const CLASS_BY_ID = new Map(MONITOR_CLASSES.map((c) => [c.id, c]))
