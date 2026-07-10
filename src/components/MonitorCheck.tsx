@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { Intro } from './Intro'
 
 type Orientation = 'vertical' | 'horizontal'
@@ -295,6 +296,9 @@ export function MonitorCheck({ screen, setScreen }: Props) {
     [active, setScreen],
   )
 
+  // Reveal the OSD (top bar + side arrows) and arm the auto-hide timer. A tap or
+  // click on the surface only does this — navigation happens via the arrow
+  // buttons, so a stray tap never jumps screens.
   const pokeHint = useCallback(() => {
     setShowHint(true)
     window.clearTimeout(hintTimer.current)
@@ -334,8 +338,8 @@ export function MonitorCheck({ screen, setScreen }: Props) {
     <section>
       <Intro>
         Full-screen test patterns for spotting dead pixels, backlight bleed, and uniformity issues.
-        Pick a pattern to begin — then click or use <kbd>←</kbd>/<kbd>→</kbd> to move between screens,
-        and <kbd>Esc</kbd> to exit.
+        Pick a pattern to begin — then tap the screen to reveal the controls, use the on-screen
+        arrows or <kbd>←</kbd>/<kbd>→</kbd> to move between screens, and <kbd>Esc</kbd> to exit.
       </Intro>
 
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -365,8 +369,12 @@ export function MonitorCheck({ screen, setScreen }: Props) {
       <div
         ref={surfaceRef}
         onMouseMove={active !== null ? pokeHint : undefined}
-        onClick={active !== null ? () => step(1) : undefined}
-        className={active === null ? 'hidden' : 'fixed inset-0 z-50 h-full w-full cursor-none bg-black'}
+        onClick={active !== null ? pokeHint : undefined}
+        className={
+          active === null
+            ? 'hidden'
+            : `fixed inset-0 z-50 h-full w-full bg-black ${showHint ? '' : 'cursor-none'}`
+        }
         role={active !== null ? 'img' : undefined}
         aria-label={current ? `${current.label} test pattern` : undefined}
       >
@@ -374,50 +382,58 @@ export function MonitorCheck({ screen, setScreen }: Props) {
 
         {active !== null && (
           <div
-            className={`pointer-events-none absolute inset-x-0 top-0 flex justify-center p-4 transition-opacity duration-300 ${
+            className={`pointer-events-none absolute inset-0 transition-opacity duration-300 ${
               showHint ? 'opacity-100' : 'opacity-0'
             }`}
+            aria-hidden={!showHint}
           >
-            <div className="pointer-events-auto flex items-center gap-3 rounded-full border border-white/20 bg-black/70 px-4 py-2 text-sm text-white shadow-lg backdrop-blur">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  step(-1)
-                  pokeHint()
-                }}
-                className="cursor-pointer rounded px-2 py-1 hover:bg-white/15"
-                aria-label="Previous pattern"
-              >
-                ←
-              </button>
-              <span className="tabular-nums">
-                {active + 1} / {PATTERNS.length} · {current?.label}
-              </span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  step(1)
-                  pokeHint()
-                }}
-                className="cursor-pointer rounded px-2 py-1 hover:bg-white/15"
-                aria-label="Next pattern"
-              >
-                →
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  close()
-                }}
-                className="ml-1 cursor-pointer rounded px-2 py-1 hover:bg-white/15"
-                aria-label="Exit test"
-              >
-                Esc ✕
-              </button>
+            {/* Top OSD bar */}
+            <div className="absolute inset-x-0 top-0 flex justify-center p-4">
+              <div className="pointer-events-auto flex items-center gap-3 rounded-full border border-white/20 bg-black/70 px-4 py-2 text-sm text-white shadow-lg backdrop-blur">
+                <span className="tabular-nums">
+                  {active + 1} / {PATTERNS.length} · {current?.label}
+                </span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    close()
+                  }}
+                  className="ml-1 cursor-pointer rounded px-2 py-1 hover:bg-white/15"
+                  aria-label="Exit test"
+                >
+                  Esc ✕
+                </button>
+              </div>
             </div>
+
+            {/* Previous — vertically centered on the left edge */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                step(-1)
+                pokeHint()
+              }}
+              className="pointer-events-auto absolute left-4 top-1/2 -translate-y-1/2 cursor-pointer rounded-full border border-white/20 bg-black/70 p-3 text-white shadow-lg backdrop-blur hover:bg-white/15"
+              aria-label="Previous pattern"
+            >
+              <ArrowLeft className="h-6 w-6" />
+            </button>
+
+            {/* Next — vertically centered on the right edge */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                step(1)
+                pokeHint()
+              }}
+              className="pointer-events-auto absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer rounded-full border border-white/20 bg-black/70 p-3 text-white shadow-lg backdrop-blur hover:bg-white/15"
+              aria-label="Next pattern"
+            >
+              <ArrowRight className="h-6 w-6" />
+            </button>
           </div>
         )}
       </div>
