@@ -27,10 +27,14 @@ export function UpdatePrompt() {
     updateServiceWorker,
   } = useRegisterSW({
     // Surface the overlay as soon as a new worker starts downloading, so it's
-    // visible for the whole fetch (not just the instant it's ready).
+    // visible for the whole fetch (not just the instant it's ready). Only for a
+    // real update, though: `updatefound` also fires on the very first install
+    // (no SW yet), and that install never flips `needRefresh`, so showing then
+    // would leave "Updating…" up forever. `registration.active` is null on the
+    // first install and set once a worker already controls the page.
     onRegisteredSW(_swUrl, registration) {
       registration?.addEventListener('updatefound', () => {
-        if (registration.installing) show()
+        if (registration.installing && registration.active) show()
       })
     },
   })
