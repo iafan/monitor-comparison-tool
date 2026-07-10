@@ -80,3 +80,52 @@ export function renderSitemap(): string {
   const urls = locs.map((loc) => `  <url>\n    <loc>${esc(loc)}</loc>\n  </url>`).join('\n')
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`
 }
+
+/** Group heading + rendering component for each page kind, for the debug index. */
+const KIND_META: Record<StaticPage['kind'], { label: string; component: string }> = {
+  resolution: { label: 'Resolution pages — same pixels, different size', component: 'ResolutionExplainer' },
+  size: { label: 'Size pages — same size, different pixels', component: 'SizeExplainer' },
+  aspect: { label: 'Aspect-ratio pages — same size, different shape', component: 'AspectExplainer' },
+  curve: { label: 'Curvature pages — same panel, different curve', component: 'CurveExplainer' },
+  'curve-concept': { label: 'Curvature concept', component: 'CurvatureConcept' },
+}
+const PAGE_INDEX_ORDER: StaticPage['kind'][] = ['resolution', 'size', 'aspect', 'curve', 'curve-concept']
+
+/** URL path of the internal debug index (kept out of the sitemap on purpose). */
+export const PAGE_INDEX_PATH = 'list-of-explanation-pages'
+
+/**
+ * A bare, unstyled debug index of every generated page, grouped by kind (with the
+ * component that renders each group). NOT part of getStaticPages(), so it never
+ * reaches the sitemap; the build script writes it separately. `noindex` keeps
+ * crawlers that stumble onto it from indexing it.
+ */
+export function renderPageIndex(): { path: string; html: string } {
+  const pages = getStaticPages()
+  const sections = PAGE_INDEX_ORDER.map((kind) => ({ kind, items: pages.filter((p) => p.kind === kind) }))
+    .filter((s) => s.items.length > 0)
+    .map(({ kind, items }) => {
+      const { label, component } = KIND_META[kind]
+      const lis = items
+        .map((p) => `      <li><a href="../${p.path}/">/${p.path}/</a> — ${esc(p.title)}</li>`)
+        .join('\n')
+      return `    <h2>${esc(label)} <small>&lt;${component}&gt; · ${items.length}</small></h2>\n    <ul>\n${lis}\n    </ul>`
+    })
+    .join('\n')
+  const html = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>List of explanation pages (${pages.length})</title>
+  </head>
+  <body>
+    <h1>Generated explanation pages (${pages.length})</h1>
+    <p>Internal debug index — not linked from the sitemap.</p>
+${sections}
+  </body>
+</html>
+`
+  return { path: PAGE_INDEX_PATH, html }
+}

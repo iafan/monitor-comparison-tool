@@ -29,7 +29,7 @@ const vite = await createServer({
   logLevel: 'warn',
 })
 try {
-  const { renderStaticPages, renderSitemap } = await vite.ssrLoadModule('/src/seo/render.tsx')
+  const { renderStaticPages, renderSitemap, renderPageIndex } = await vite.ssrLoadModule('/src/seo/render.tsx')
   const pages = renderStaticPages({ cssHref })
   for (const page of pages) {
     const dir = join(DIST, page.path)
@@ -39,6 +39,14 @@ try {
   }
   await writeFile(join(DIST, 'sitemap.xml'), renderSitemap())
   console.log('wrote sitemap.xml')
+
+  // Internal debug index of every generated page — deliberately NOT in the
+  // sitemap. Written after the sitemap so it can never leak into it.
+  const index = renderPageIndex()
+  await mkdir(join(DIST, index.path), { recursive: true })
+  await writeFile(join(DIST, index.path, 'index.html'), index.html)
+  console.log(`wrote ${join(index.path, 'index.html')} (debug index, unlisted)`)
+
   console.log(`\n${pages.length} SEO page(s) generated.`)
 } finally {
   await vite.close()
