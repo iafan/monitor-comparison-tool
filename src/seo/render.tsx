@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { getStaticPages, type StaticPage } from './pages'
+import { AspectExplainer } from './AspectExplainer'
 import { CurvatureConcept } from './CurvatureConcept'
 import { CurveExplainer } from './CurveExplainer'
 import { ResolutionExplainer } from './ResolutionExplainer'
@@ -61,6 +62,9 @@ export function renderStaticPages(opts: { cssHref: string }): { path: string; ht
         break
       case 'curve-concept':
         el = <CurvatureConcept {...page.props} />
+        break
+      case 'aspect':
+        el = <AspectExplainer {...page.props} />
         break
       default:
         el = <ResolutionExplainer {...page.props} />

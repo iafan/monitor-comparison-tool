@@ -7,6 +7,7 @@ import { MONITOR_CLASSES, type MonitorClass } from '../data'
 import { aspectRatioLabel } from '../lib/geometry'
 import { encodeState, type AppState } from '../lib/urlState'
 import type { Monitor } from '../types'
+import type { AspectExplainerProps } from './AspectExplainer'
 import { curveName } from './curve'
 import type { CurvatureConceptProps } from './CurvatureConcept'
 import type { CurveExplainerProps } from './CurveExplainer'
@@ -29,6 +30,7 @@ export type StaticPage =
   | (BasePage & { kind: 'size'; props: SizeExplainerProps })
   | (BasePage & { kind: 'curve'; props: CurveExplainerProps })
   | (BasePage & { kind: 'curve-concept'; props: CurvatureConceptProps })
+  | (BasePage & { kind: 'aspect'; props: AspectExplainerProps })
 
 const resKey = (w: number, h: number) => `${w}x${h}`
 
@@ -36,6 +38,11 @@ const resKey = (w: number, h: number) => `${w}x${h}`
 const MARKETING_NAME: Record<string, string> = Object.fromEntries(
   PRESETS.map((p) => [resKey(p.resWidth, p.resHeight), p.label.split('—')[0].trim()]),
 )
+
+/** The aspect-ratio family ("16:9", "16:10", "21:9", "32:9"), dropping any exact
+ *  reduction the label appends ("21:9 (43:18)" → "21:9"). Used to keep the size
+ *  pages comparing same-shape panels and to pair the aspect pages. */
+const aspectFamily = (w: number, h: number) => aspectRatioLabel(w, h).split(' ')[0]
 
 const slugify = (s: string) =>
   s
@@ -116,9 +123,11 @@ function getResolutionPages(): StaticPage[] {
   })
 }
 
-/** Every diagonal offered at ≥2 distinct resolutions — "same size, different
- *  pixels". The flip side of the resolution pages: here the panel is one fixed
- *  physical size and only the pixel density changes. */
+/** Every diagonal offered at ≥2 distinct resolutions of the SAME aspect ratio —
+ *  "same size, different pixels". The flip side of the resolution pages: here the
+ *  panel is one fixed physical size and only the pixel density changes. Restricted
+ *  to one aspect family per page so a 16:10 panel is never compared as though it
+ *  were the same shape as a 16:9 one (that comparison is the aspect pages' job). */
 function getSizePages(): StaticPage[] {
   const byDiag = new Map<number, MonitorClass[]>()
   for (const c of MONITOR_CLASSES) {
@@ -136,7 +145,19 @@ function getSizePages(): StaticPage[] {
           const k = resKey(c.resWidth, c.resHeight)
           return seen.has(k) ? false : (seen.add(k), true)
         })
-      return { diagonal, classes: uniqueByRes }
+      // Keep only the aspect family with the most resolutions (the "main" family
+      // for this size); ties break toward more total pixels. One page per diagonal.
+      const byFamily = new Map<string, MonitorClass[]>()
+      for (const c of uniqueByRes) {
+        const f = aspectFamily(c.resWidth, c.resHeight)
+        ;(byFamily.get(f) ?? byFamily.set(f, []).get(f)!).push(c)
+      }
+      const best = [...byFamily.values()].sort(
+        (a, b) =>
+          b.length - a.length ||
+          b[b.length - 1].resWidth * b[b.length - 1].resHeight - a[a.length - 1].resWidth * a[a.length - 1].resHeight,
+      )[0]
+      return { diagonal, classes: best ?? [] }
     })
     .filter(({ classes }) => classes.length >= 2)
     .sort((a, b) => a.diagonal - b.diagonal)
@@ -249,7 +270,71 @@ function getCurvatureConceptPage(): StaticPage {
   }
 }
 
-/** Every generated static page — resolution, size, and curvature. */
+/** Every diagonal offered in ≥2 aspect ratios — "same size, different shape".
+ *  Compares one representative panel per aspect family (preferring a resolution
+ *  width shared across families, so the taller ratio simply adds rows). */
+function getAspectPages(): StaticPage[] {
+  const byDiag = new Map<number, MonitorClass[]>()
+  for (const c of MONITOR_CLASSES) {
+    ;(byDiag.get(c.diagonal) ?? byDiag.set(c.diagonal, []).get(c.diagonal)!).push(c)
+  }
+
+  const pages: StaticPage[] = []
+  for (const [diagonal, classes] of [...byDiag.entries()].sort((a, b) => a[0] - b[0])) {
+    const byFamily = new Map<string, MonitorClass[]>()
+    for (const c of classes) {
+      const f = aspectFamily(c.resWidth, c.resHeight)
+      ;(byFamily.get(f) ?? byFamily.set(f, []).get(f)!).push(c)
+    }
+    if (byFamily.size < 2) continue
+
+    // Prefer the largest resolution width shared by ≥2 families, so families are
+    // compared at a matched width (the taller ratio just adds rows).
+    const widthFamilies = new Map<number, Set<string>>()
+    for (const [f, cs] of byFamily) {
+      for (const c of cs) (widthFamilies.get(c.resWidth) ?? widthFamilies.set(c.resWidth, new Set()).get(c.resWidth)!).add(f)
+    }
+    let sharedWidth: number | null = null
+    for (const [w, fams] of widthFamilies) {
+      if (fams.size >= 2 && (sharedWidth === null || w > sharedWidth)) sharedWidth = w
+    }
+
+    // One representative per family: the shared-width class if it has one, else
+    // that family's highest-resolution class.
+    const panels = [...byFamily.values()].map((cs) => {
+      const rep =
+        (sharedWidth !== null && cs.find((c) => c.resWidth === sharedWidth)) ||
+        [...cs].sort((a, b) => b.resWidth * b.resHeight - a.resWidth * a.resHeight)[0]
+      return { c: rep, ratioName: aspectFamily(rep.resWidth, rep.resHeight) }
+    })
+    // Widest aspect first (16:9 before 16:10).
+    panels.sort((a, b) => b.c.resWidth / b.c.resHeight - a.c.resWidth / a.c.resHeight)
+
+    const nameList = panels.map((p) => p.ratioName).join(' vs ')
+    const resList = panels.map((p) => `${p.c.resWidth}×${p.c.resHeight}`).join(' vs ')
+
+    pages.push({
+      kind: 'aspect',
+      path: `${slugify(`${diagonal}`)}-inch-${panels.map((p) => slugify(p.ratioName)).join('-vs-')}`,
+      title: `${nameList} at ${diagonal}″: ${resList} compared`,
+      description: `${nameList} on a ${diagonal}-inch monitor — how the aspect ratio changes the screen's shape and usable height (${resList}), drawn to scale.`,
+      props: {
+        diagonal,
+        panels,
+        compareHref: compareHref(panels.map((p) => p.c)),
+      },
+    })
+  }
+  return pages
+}
+
+/** Every generated static page — resolution, size, curvature, and aspect ratio. */
 export function getStaticPages(): StaticPage[] {
-  return [...getResolutionPages(), ...getSizePages(), ...getCurvePages(), getCurvatureConceptPage()]
+  return [
+    ...getResolutionPages(),
+    ...getSizePages(),
+    ...getCurvePages(),
+    getCurvatureConceptPage(),
+    ...getAspectPages(),
+  ]
 }

@@ -91,14 +91,19 @@ export interface Preset {
 
 export const PRESETS: Preset[] = [
   { label: 'FHD — 1920 × 1080', resWidth: 1920, resHeight: 1080 },
+  { label: 'WUXGA — 1920 × 1200', resWidth: 1920, resHeight: 1200 },
+  { label: 'UWFHD (UltraWide) — 2560 × 1080', resWidth: 2560, resHeight: 1080 },
   { label: 'QHD — 2560 × 1440', resWidth: 2560, resHeight: 1440 },
+  { label: 'WQXGA — 2560 × 1600', resWidth: 2560, resHeight: 1600 },
   { label: 'WQHD (UltraWide) — 3440 × 1440', resWidth: 3440, resHeight: 1440 },
   { label: 'WQHD+ (1600p) — 3840 × 1600', resWidth: 3840, resHeight: 1600 },
   { label: '4K UHD — 3840 × 2160', resWidth: 3840, resHeight: 2160 },
+  { label: 'WQUXGA — 3840 × 2400', resWidth: 3840, resHeight: 2400 },
   { label: 'DQHD (Super UltraWide) — 5120 × 1440', resWidth: 5120, resHeight: 1440 },
   { label: '5K2K WUHD — 5120 × 2160', resWidth: 5120, resHeight: 2160 },
   { label: '5K — 5120 × 2880', resWidth: 5120, resHeight: 2880 },
   { label: '6K — 6016 × 3384', resWidth: 6016, resHeight: 3384 },
+  { label: 'Dual UHD — 7680 × 2160', resWidth: 7680, resHeight: 2160 },
 ]
 
 /** Typical curved-monitor radii in mm; smaller = more aggressively curved. */

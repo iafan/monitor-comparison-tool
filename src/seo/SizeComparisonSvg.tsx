@@ -8,6 +8,8 @@ export const PANEL_COLORS = ['#2f6bff', '#12a150', '#e0642a', '#8a4fff', '#e0a92
 
 interface Props {
   classes: MonitorClass[]
+  /** Optional per-panel labels (aligned to `classes`); defaults to the diagonal. */
+  labels?: string[]
 }
 
 /**
@@ -15,7 +17,7 @@ interface Props {
  * — pure SVG, no effects/measurement, so it renders identically server-side and
  * is inlined straight into the static page.
  */
-export function SizeComparisonSvg({ classes }: Props) {
+export function SizeComparisonSvg({ classes, labels }: Props) {
   const panels = classes.map((c) => ({ c, ...physical(c) }))
   const maxW = Math.max(...panels.map((p) => p.widthIn))
   const maxH = Math.max(...panels.map((p) => p.heightIn))
@@ -60,7 +62,7 @@ export function SizeComparisonSvg({ classes }: Props) {
               strokeWidth={2}
             />
             <text x={x + 8} y={y + 20} fill={color} fontSize={15} fontWeight={600}>
-              {p.c.diagonal}″
+              {labels?.[classes.indexOf(p.c)] ?? `${p.c.diagonal}″`}
             </text>
           </g>
         )
