@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Intro } from './Intro'
+import { useSwipeDown } from '../hooks/useSwipeDown'
 import type { VisibleAreaFrame } from '../types'
 
 /**
@@ -380,6 +381,8 @@ export function MonitorGeometry({ visibleFrame, setVisibleFrame }: Props) {
     hintTimer.current = window.setTimeout(() => setShowHint(false), 2500)
   }, [])
 
+  const swipe = useSwipeDown({ onSwipeDown: close, enabled: active !== null })
+
   useEffect(() => {
     if (!active) return
     pokeHint()
@@ -432,8 +435,9 @@ export function MonitorGeometry({ visibleFrame, setVisibleFrame }: Props) {
       {/* Fullscreen surface: always mounted so requestFullscreen has a target. */}
       <div
         ref={surfaceRef}
-        onMouseMove={active ? pokeHint : undefined}
+        onPointerMove={active ? (e) => e.pointerType === 'mouse' && pokeHint() : undefined}
         onClick={active === 'geometry' ? close : undefined}
+        {...swipe}
         className={
           active ? `fixed inset-0 z-50 h-full w-full bg-black ${active === 'geometry' ? 'cursor-none' : ''}` : 'hidden'
         }

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { Intro } from './Intro'
+import { useSwipeDown } from '../hooks/useSwipeDown'
 
 type Orientation = 'vertical' | 'horizontal'
 
@@ -296,14 +297,27 @@ export function MonitorCheck({ screen, setScreen }: Props) {
     [active, setScreen],
   )
 
-  // Reveal the OSD (top bar + side arrows) and arm the auto-hide timer. A tap or
-  // click on the surface only does this — navigation happens via the arrow
-  // buttons, so a stray tap never jumps screens.
+  // Reveal the OSD (top bar + side arrows) and arm the auto-hide timer. Used by
+  // pointer movement, keyboard nav, and on open — navigation happens via the
+  // arrow buttons, so a stray poke never jumps screens.
   const pokeHint = useCallback(() => {
     setShowHint(true)
     window.clearTimeout(hintTimer.current)
     hintTimer.current = window.setTimeout(() => setShowHint(false), 2500)
   }, [])
+
+  // A tap/click on the surface toggles the OSD: one tap brings it up (and arms
+  // the auto-hide), another dismisses it immediately.
+  const toggleHint = useCallback(() => {
+    window.clearTimeout(hintTimer.current)
+    setShowHint((visible) => {
+      if (visible) return false
+      hintTimer.current = window.setTimeout(() => setShowHint(false), 2500)
+      return true
+    })
+  }, [])
+
+  const swipe = useSwipeDown({ onSwipeDown: close, enabled: active !== null })
 
   useEffect(() => {
     if (active === null) return
@@ -368,8 +382,11 @@ export function MonitorCheck({ screen, setScreen }: Props) {
       {/* Fullscreen surface: always mounted so requestFullscreen has a target. */}
       <div
         ref={surfaceRef}
-        onMouseMove={active !== null ? pokeHint : undefined}
-        onClick={active !== null ? pokeHint : undefined}
+        // Mouse movement reveals the OSD (desktop); guard on pointerType so the
+        // synthetic mouse events a tap emits don't fight the tap-to-toggle below.
+        onPointerMove={active !== null ? (e) => e.pointerType === 'mouse' && pokeHint() : undefined}
+        onClick={active !== null ? toggleHint : undefined}
+        {...swipe}
         className={
           active === null
             ? 'hidden'
