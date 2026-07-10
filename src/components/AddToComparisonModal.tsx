@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { MONITOR_CLASSES, MONITOR_MODELS, classLabel, getClass } from '../data'
 import type { MonitorClass, MonitorModel } from '../data'
+import { matchesQuery } from '../lib/search'
 import { Dialog } from './Dialog'
 import type { Monitor, MonitorInput } from '../types'
 
@@ -32,6 +33,72 @@ function classNameSuggestion(c: MonitorClass): string {
   return `${c.diagonal}" ${c.resWidth}×${c.resHeight}${curve}`
 }
 
+const rowClass = (selected: boolean) =>
+  `block w-full border-b border-[var(--border)] px-3 py-2.5 text-left text-sm last:border-b-0 ${
+    selected ? 'bg-[var(--series-1)] text-white' : 'hover:bg-[var(--page-plane)]'
+  }`
+
+interface PickListProps<T> {
+  /** Caption above the search box. */
+  label: string
+  placeholder: string
+  /** Shown when the search matches nothing. */
+  emptyText: string
+  query: string
+  onQuery: (value: string) => void
+  /** Already-filtered items to list. */
+  items: T[]
+  getId: (item: T) => string
+  selectedId: string | null
+  onSelect: (id: string) => void
+  /** The row's inner content; `selected` lets it tune its own muted colors. */
+  renderRow: (item: T, selected: boolean) => ReactNode
+}
+
+/** A labelled search box over a scrolling list of selectable rows — the shared
+ *  shell behind every "add monitor" source tab (My monitors / Class / Model). */
+function PickList<T>({
+  label,
+  placeholder,
+  emptyText,
+  query,
+  onQuery,
+  items,
+  getId,
+  selectedId,
+  onSelect,
+  renderRow,
+}: PickListProps<T>) {
+  return (
+    <div className={`${labelClass} min-h-0 flex-1`}>
+      <span>{label}</span>
+      <input
+        type="text"
+        value={query}
+        onChange={(e) => onQuery(e.target.value)}
+        placeholder={placeholder}
+        className={fieldClass}
+      />
+      <ul className="mt-1 min-h-0 flex-1 overflow-y-auto rounded-lg border border-[var(--border)]">
+        {items.length === 0 && (
+          <li className="px-3 py-2.5 text-sm text-[var(--text-muted)]">{emptyText}</li>
+        )}
+        {items.map((item) => {
+          const id = getId(item)
+          const selected = selectedId === id
+          return (
+            <li key={id}>
+              <button type="button" onClick={() => onSelect(id)} aria-pressed={selected} className={rowClass(selected)}>
+                {renderRow(item, selected)}
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  )
+}
+
 export function AddToComparisonModal({ myMonitors, onAdd, onClose, onGoToMyMonitors }: Props) {
   const [source, setSource] = useState<Source>('my')
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -44,24 +111,14 @@ export function AddToComparisonModal({ myMonitors, onAdd, onClose, onGoToMyMonit
     setSelectedId(null)
   }
 
-  const q = (s: string) => s.trim().toLowerCase()
-
   const myMatches = (m: Monitor) => {
-    const needle = q(myQuery)
-    if (!needle) return true
     const curve = m.curveRadius ? `${m.curveRadius}r` : 'flat'
-    return `${m.name} ${m.resWidth}×${m.resHeight} ${m.diagonal} ${curve}`.toLowerCase().includes(needle)
+    return matchesQuery(myQuery, `${m.name} ${m.resWidth}×${m.resHeight} ${m.diagonal} ${curve}`)
   }
-  const classMatches = (c: MonitorClass) => {
-    const needle = q(classQuery)
-    return !needle || classLabel(c).toLowerCase().includes(needle) || c.id.includes(needle)
-  }
+  const classMatches = (c: MonitorClass) => matchesQuery(classQuery, `${classLabel(c)} ${c.id}`)
   const modelMatches = (m: MonitorModel) => {
-    const needle = q(modelQuery)
-    if (!needle) return true
     const cls = getClass(m.classId)
-    const hay = `${m.brand} ${m.name} ${m.panelType} ${cls ? classLabel(cls) : ''}`.toLowerCase()
-    return hay.includes(needle)
+    return matchesQuery(modelQuery, `${m.brand} ${m.name} ${m.panelType} ${cls ? classLabel(cls) : ''}`)
   }
 
   const filteredMy = myMonitors.filter(myMatches)
@@ -116,11 +173,6 @@ export function AddToComparisonModal({ myMonitors, onAdd, onClose, onGoToMyMonit
     if (input) onAdd(input)
   }
 
-  const rowClass = (selected: boolean) =>
-    `block w-full border-b border-[var(--border)] px-3 py-2.5 text-left text-sm last:border-b-0 ${
-      selected ? 'bg-[var(--series-1)] text-white' : 'hover:bg-[var(--page-plane)]'
-    }`
-
   return (
     <Dialog title="Add monitor" onClose={onClose}>
       <form onSubmit={submit} className="flex flex-col gap-3.5">
@@ -152,9 +204,9 @@ export function AddToComparisonModal({ myMonitors, onAdd, onClose, onGoToMyMonit
         {/* Stable body height so switching tabs never resizes the dialog: track the
             viewport (good on mobile) but floor and cap it; lists scroll within. */}
         <div className="flex h-[60vh] max-h-[460px] min-h-[320px] flex-col gap-3.5">
-          {source === 'my' && (
-            <div className={`${labelClass} min-h-0 flex-1`}>
-              {myMonitors.length === 0 ? (
+          {source === 'my' &&
+            (myMonitors.length === 0 ? (
+              <div className={`${labelClass} min-h-0 flex-1`}>
                 <p className="my-auto text-center text-sm text-[var(--text-muted)]">
                   Your My Monitors list is empty. Add your monitors in the{' '}
                   <button
@@ -166,113 +218,67 @@ export function AddToComparisonModal({ myMonitors, onAdd, onClose, onGoToMyMonit
                   </button>{' '}
                   tool to pick them here and use them across the other tools.
                 </p>
-              ) : (
-                <>
-                  <span>Pick one of your monitors</span>
-                  <input
-                    type="text"
-                    value={myQuery}
-                    onChange={(e) => setMyQuery(e.target.value)}
-                    placeholder="Search by name, resolution or curvature…"
-                    className={fieldClass}
-                  />
-                  <ul className="mt-1 min-h-0 flex-1 overflow-y-auto rounded-lg border border-[var(--border)]">
-                    {filteredMy.length === 0 && (
-                      <li className="px-3 py-2.5 text-sm text-[var(--text-muted)]">No matching monitors</li>
-                    )}
-                    {filteredMy.map((m) => (
-                      <li key={m.id}>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedId(m.id)}
-                          aria-pressed={selectedId === m.id}
-                          className={rowClass(selectedId === m.id)}
-                        >
-                          <span className="font-semibold">{m.name}</span>
-                          <span className={selectedId === m.id ? 'text-white/80' : 'text-[var(--text-muted)]'}>
-                            {' '}
-                            · {m.resWidth}×{m.resHeight} · {m.diagonal}" ·{' '}
-                            {m.curveRadius ? `${m.curveRadius}R` : 'Flat'}
-                          </span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              )}
-            </div>
-          )}
+              </div>
+            ) : (
+              <PickList
+                label="Pick one of your monitors"
+                placeholder="Search by name, resolution or curvature…"
+                emptyText="No matching monitors"
+                query={myQuery}
+                onQuery={setMyQuery}
+                items={filteredMy}
+                getId={(m) => m.id}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                renderRow={(m, selected) => (
+                  <>
+                    <span className="font-semibold">{m.name}</span>
+                    <span className={selected ? 'text-white/80' : 'text-[var(--text-muted)]'}>
+                      {' '}
+                      · {m.resWidth}×{m.resHeight} · {m.diagonal}" · {m.curveRadius ? `${m.curveRadius}R` : 'Flat'}
+                    </span>
+                  </>
+                )}
+              />
+            ))}
 
           {source === 'class' && (
-            <div className={`${labelClass} min-h-0 flex-1`}>
-              <span>Pick a class</span>
-              <input
-                type="text"
-                value={classQuery}
-                onChange={(e) => setClassQuery(e.target.value)}
-                placeholder="Search by size, resolution or curvature…"
-                className={fieldClass}
-              />
-              <ul className="mt-1 min-h-0 flex-1 overflow-y-auto rounded-lg border border-[var(--border)]">
-                {filteredClasses.length === 0 && (
-                  <li className="px-3 py-2.5 text-sm text-[var(--text-muted)]">No matching classes</li>
-                )}
-                {filteredClasses.map((c) => (
-                  <li key={c.id}>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedId(c.id)}
-                      aria-pressed={selectedId === c.id}
-                      className={rowClass(selectedId === c.id)}
-                    >
-                      {classLabel(c)}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <PickList
+              label="Pick a class"
+              placeholder="Search by size, resolution or curvature…"
+              emptyText="No matching classes"
+              query={classQuery}
+              onQuery={setClassQuery}
+              items={filteredClasses}
+              getId={(c) => c.id}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              renderRow={(c) => classLabel(c)}
+            />
           )}
 
           {source === 'model' && (
-            <div className={`${labelClass} min-h-0 flex-1`}>
-              <span>Pick a model</span>
-              <input
-                type="text"
-                value={modelQuery}
-                onChange={(e) => setModelQuery(e.target.value)}
-                placeholder="Search by brand, model or panel…"
-                className={fieldClass}
-              />
-              <ul className="mt-1 min-h-0 flex-1 overflow-y-auto rounded-lg border border-[var(--border)]">
-                {filteredModels.length === 0 && (
-                  <li className="px-3 py-2.5 text-sm text-[var(--text-muted)]">No matching models</li>
-                )}
-                {filteredModels.map((m) => {
-                  const selected = selectedId === m.id
-                  const cls = getClass(m.classId)
-                  const meta = [cls && classLabel(cls), m.panelType, m.releaseYear]
-                    .filter(Boolean)
-                    .join(' · ')
-                  return (
-                    <li key={m.id}>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedId(m.id)}
-                        aria-pressed={selected}
-                        className={`flex w-full flex-col gap-0.5 border-b border-[var(--border)] px-3 py-2.5 text-left last:border-b-0 ${
-                          selected ? 'bg-[var(--series-1)] text-white' : 'hover:bg-[var(--page-plane)]'
-                        }`}
-                      >
-                        <span className="text-sm font-semibold">{m.name}</span>
-                        <span className={`text-xs ${selected ? 'text-white/80' : 'text-[var(--text-muted)]'}`}>
-                          {meta}
-                        </span>
-                      </button>
-                    </li>
-                  )
-                })}
-              </ul>
-            </div>
+            <PickList
+              label="Pick a model"
+              placeholder="Search by brand, model or panel…"
+              emptyText="No matching models"
+              query={modelQuery}
+              onQuery={setModelQuery}
+              items={filteredModels}
+              getId={(m) => m.id}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              renderRow={(m, selected) => {
+                const cls = getClass(m.classId)
+                const meta = [cls && classLabel(cls), m.panelType, m.releaseYear].filter(Boolean).join(' · ')
+                return (
+                  <span className="flex flex-col gap-0.5">
+                    <span className="font-semibold">{m.name}</span>
+                    <span className={`text-xs ${selected ? 'text-white/80' : 'text-[var(--text-muted)]'}`}>{meta}</span>
+                  </span>
+                )
+              }}
+            />
           )}
         </div>
 
