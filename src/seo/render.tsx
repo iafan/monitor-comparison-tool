@@ -5,6 +5,9 @@ import { CurvatureConcept } from './CurvatureConcept'
 import { CurveExplainer } from './CurveExplainer'
 import { ResolutionExplainer } from './ResolutionExplainer'
 import { SizeExplainer } from './SizeExplainer'
+import { ArtifactsExplainer } from './ArtifactsExplainer'
+import { PanelTechExplainer } from './PanelTechExplainer'
+import { PanelTypesHub } from './PanelTypesHub'
 
 const SITE = 'https://monitorture.com'
 
@@ -66,6 +69,15 @@ export function renderStaticPages(opts: { cssHref: string }): { path: string; ht
       case 'aspect':
         el = <AspectExplainer {...page.props} />
         break
+      case 'panel-hub':
+        el = <PanelTypesHub {...page.props} />
+        break
+      case 'panel-tech':
+        el = <PanelTechExplainer {...page.props} />
+        break
+      case 'artifacts':
+        el = <ArtifactsExplainer {...page.props} />
+        break
       default:
         el = <ResolutionExplainer {...page.props} />
     }
@@ -88,8 +100,20 @@ const KIND_META: Record<StaticPage['kind'], { label: string; component: string }
   aspect: { label: 'Aspect-ratio pages — same size, different shape', component: 'AspectExplainer' },
   curve: { label: 'Curvature pages — same panel, different curve', component: 'CurveExplainer' },
   'curve-concept': { label: 'Curvature concept', component: 'CurvatureConcept' },
+  'panel-hub': { label: 'Panel-types hub — VA/IPS/OLED/Mini-LED overview', component: 'PanelTypesHub' },
+  'panel-tech': { label: 'Panel-technology pages — one per display technology', component: 'PanelTechExplainer' },
+  artifacts: { label: 'Visual-artifacts explainer — smearing, ghosting, burn-in', component: 'ArtifactsExplainer' },
 }
-const PAGE_INDEX_ORDER: StaticPage['kind'][] = ['resolution', 'size', 'aspect', 'curve', 'curve-concept']
+const PAGE_INDEX_ORDER: StaticPage['kind'][] = [
+  'resolution',
+  'size',
+  'aspect',
+  'curve',
+  'curve-concept',
+  'panel-hub',
+  'panel-tech',
+  'artifacts',
+]
 
 /** URL path of the internal debug index (kept out of the sitemap on purpose). */
 export const PAGE_INDEX_PATH = 'list-of-explanation-pages'

@@ -13,6 +13,10 @@ import type { CurvatureConceptProps } from './CurvatureConcept'
 import type { CurveExplainerProps } from './CurveExplainer'
 import type { ResolutionExplainerProps } from './ResolutionExplainer'
 import type { SizeExplainerProps } from './SizeExplainer'
+import type { ArtifactsExplainerProps } from './ArtifactsExplainer'
+import type { PanelTechExplainerProps } from './PanelTechExplainer'
+import type { PanelTypesHubProps } from './PanelTypesHub'
+import { PANEL_TECHS, PANEL_TYPES_HUB_PATH, VISUAL_ARTIFACTS_PATH } from './panelTech'
 
 interface BasePage {
   /** URL path segment → written to dist/<path>/index.html (single segment, so
@@ -31,6 +35,9 @@ export type StaticPage =
   | (BasePage & { kind: 'curve'; props: CurveExplainerProps })
   | (BasePage & { kind: 'curve-concept'; props: CurvatureConceptProps })
   | (BasePage & { kind: 'aspect'; props: AspectExplainerProps })
+  | (BasePage & { kind: 'panel-hub'; props: PanelTypesHubProps })
+  | (BasePage & { kind: 'panel-tech'; props: PanelTechExplainerProps })
+  | (BasePage & { kind: 'artifacts'; props: ArtifactsExplainerProps })
 
 const resKey = (w: number, h: number) => `${w}x${h}`
 
@@ -328,7 +335,47 @@ function getAspectPages(): StaticPage[] {
   return pages
 }
 
-/** Every generated static page — resolution, size, curvature, and aspect ratio. */
+/** The panel-types hub — a side-by-side overview of VA/IPS/OLED/Mini-LED that
+ *  links out to each detail page. Independent of the catalogue. */
+function getPanelTypesHubPage(): StaticPage {
+  return {
+    kind: 'panel-hub',
+    path: PANEL_TYPES_HUB_PATH,
+    title: 'VA vs IPS vs OLED vs Mini-LED: monitor display tech explained',
+    description:
+      'How the main monitor display technologies compare — VA, IPS, OLED and Mini-LED — across contrast, motion, viewing angles, brightness, color and burn-in, with a plain-English guide to choosing.',
+    props: { compareHref: '../' },
+  }
+}
+
+/** One explainer per display technology, each with Pros/Cons — mirrors the way
+ *  the curvature concept page explains a single idea, one page per technology. */
+function getPanelTechPages(): StaticPage[] {
+  return PANEL_TECHS.map((t) => ({
+    kind: 'panel-tech' as const,
+    path: t.slug,
+    title: t.seoTitle,
+    description: t.seoDescription,
+    props: { slug: t.slug },
+  }))
+}
+
+/** A single explainer of the common visual artifacts (ghosting, black smearing,
+ *  persistence blur, burn-in, VRR flicker, IPS glow), cross-linked from the tech
+ *  pages that mention each. */
+function getVisualArtifactsPage(): StaticPage {
+  return {
+    kind: 'artifacts',
+    path: VISUAL_ARTIFACTS_PATH,
+    title: 'Monitor smearing, ghosting & burn-in explained',
+    description:
+      'A plain-English guide to monitor visual artifacts: ghosting and inverse ghosting, VA black smearing, persistence blur, OLED burn-in, VRR flicker and IPS glow — what causes each, which panels show it, and how to reduce it.',
+    props: { compareHref: '../' },
+  }
+}
+
+/** Every generated static page — resolution, size, curvature, aspect ratio, and
+ *  the display-technology explainers. */
 export function getStaticPages(): StaticPage[] {
   return [
     ...getResolutionPages(),
@@ -336,5 +383,8 @@ export function getStaticPages(): StaticPage[] {
     ...getCurvePages(),
     getCurvatureConceptPage(),
     ...getAspectPages(),
+    getPanelTypesHubPage(),
+    ...getPanelTechPages(),
+    getVisualArtifactsPage(),
   ]
 }
