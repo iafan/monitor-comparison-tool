@@ -1,4 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  ArrowDownToLine,
+  ArrowLeftToLine,
+  ArrowRightToLine,
+  ArrowUpToLine,
+  Move,
+  Radius,
+  RotateCcw,
+  X,
+  type LucideIcon,
+} from 'lucide-react'
 import { Intro } from './Intro'
 import { useSwipeDown } from '../hooks/useSwipeDown'
 import type { VisibleAreaFrame } from '../types'
@@ -112,42 +123,13 @@ function GeometryCanvas() {
 
 type Frame = VisibleAreaFrame
 
-// Inlined Lucide icon bodies (24×24, currentColor stroke) — we don't pull in the
-// whole icon package for a handful of glyphs.
-const ICONS = {
-  'arrow-left-to-line': '<path d="M3 19V5"/><path d="m13 6-6 6 6 6"/><path d="M7 12h14"/>',
-  'arrow-right-to-line': '<path d="M17 12H3"/><path d="m11 18 6-6-6-6"/><path d="M21 5v14"/>',
-  'arrow-up-to-line': '<path d="M5 3h14"/><path d="m18 13-6-6-6 6"/><path d="M12 7v14"/>',
-  'arrow-down-to-line': '<path d="M12 17V3"/><path d="m6 11 6 6 6-6"/><path d="M19 21H5"/>',
-  radius:
-    '<path d="M20.34 17.52a10 10 0 1 0-2.82 2.82"/><circle cx="19" cy="19" r="2"/><path d="m13.41 13.41 4.18 4.18"/><circle cx="12" cy="12" r="2"/>',
-  move: '<path d="M12 2v20"/><path d="m15 19-3 3-3-3"/><path d="m19 9 3 3-3 3"/><path d="M2 12h20"/><path d="m5 9-3 3 3 3"/><path d="m9 5 3-3 3 3"/>',
-  'rotate-ccw': '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
-} as const
-
-function Icon({ name }: { name: keyof typeof ICONS }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="size-4 flex-none"
-      aria-hidden="true"
-      dangerouslySetInnerHTML={{ __html: ICONS[name] }}
-    />
-  )
-}
-
-const AREA_FIELDS = [
-  { key: 'topX', label: 'Top X', icon: 'arrow-left-to-line' },
-  { key: 'topY', label: 'Top Y', icon: 'arrow-up-to-line' },
-  { key: 'botX', label: 'Bottom X', icon: 'arrow-right-to-line' },
-  { key: 'botY', label: 'Bottom Y', icon: 'arrow-down-to-line' },
-  { key: 'radius', label: 'Corner radius', icon: 'radius' },
-] as const
+const AREA_FIELDS: { key: keyof Frame; label: string; icon: LucideIcon }[] = [
+  { key: 'topX', label: 'Top X', icon: ArrowLeftToLine },
+  { key: 'topY', label: 'Top Y', icon: ArrowUpToLine },
+  { key: 'botX', label: 'Bottom X', icon: ArrowRightToLine },
+  { key: 'botY', label: 'Bottom Y', icon: ArrowDownToLine },
+  { key: 'radius', label: 'Corner radius', icon: Radius },
+]
 
 /** Keep the frame inside the screen, top-left above/left of bottom-right, radius sane. */
 function clampFrame(f: Frame, W: number, H: number): Frame {
@@ -267,10 +249,10 @@ function VisibleAreaScreen({ value, onChange, onClose }: AreaProps) {
           <button
             type="button"
             onClick={onClose}
-            className="cursor-pointer rounded px-2 py-0.5 hover:bg-white/15"
+            className="inline-flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 hover:bg-white/15"
             aria-label="Exit"
           >
-            Esc ✕
+            Esc <X className="size-3.5" aria-hidden="true" />
           </button>
         </div>
         <ul>
@@ -284,7 +266,7 @@ function VisibleAreaScreen({ value, onChange, onClose }: AreaProps) {
                   i === sel ? 'bg-white/20' : 'hover:bg-white/10'
                 }`}
               >
-                <Icon name={f.icon} />
+                <f.icon className="size-4 flex-none" aria-hidden="true" />
                 <span className="flex-1">{f.label}</span>
                 <span>
                   {frame[f.key]}
@@ -302,7 +284,7 @@ function VisibleAreaScreen({ value, onChange, onClose }: AreaProps) {
                 sel === MOVE_INDEX ? 'bg-white/20' : 'hover:bg-white/10'
               }`}
             >
-              <Icon name="move" />
+              <Move className="size-4 flex-none" aria-hidden="true" />
               <span className="flex-1">Move</span>
               <span className="text-white/50">↑↓←→</span>
             </button>
@@ -319,7 +301,7 @@ function VisibleAreaScreen({ value, onChange, onClose }: AreaProps) {
                 sel === RESET_INDEX ? 'bg-white/20' : 'hover:bg-white/10'
               }`}
             >
-              <Icon name="rotate-ccw" />
+              <RotateCcw className="size-4 flex-none" aria-hidden="true" />
               <span className="flex-1">Reset</span>
               <span className="text-white/50">↵ Enter</span>
             </button>
@@ -459,10 +441,10 @@ export function MonitorGeometry({ visibleFrame, setVisibleFrame }: Props) {
                   e.stopPropagation()
                   close()
                 }}
-                className="cursor-pointer rounded px-2 py-1 hover:bg-white/15"
+                className="inline-flex cursor-pointer items-center gap-1 rounded px-2 py-1 hover:bg-white/15"
                 aria-label="Exit test"
               >
-                Esc ✕
+                Esc <X className="size-3.5" aria-hidden="true" />
               </button>
             </div>
           </div>

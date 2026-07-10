@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ArrowLeft, ArrowRight } from 'lucide-react'
+import { ArrowLeft, ArrowRight, X } from 'lucide-react'
 import { Intro } from './Intro'
 import { useSwipeDown } from '../hooks/useSwipeDown'
 
@@ -416,10 +416,10 @@ export function MonitorCheck({ screen, setScreen }: Props) {
                     e.stopPropagation()
                     close()
                   }}
-                  className="ml-1 cursor-pointer rounded px-2 py-1 hover:bg-white/15"
+                  className="ml-1 inline-flex cursor-pointer items-center gap-1 rounded px-2 py-1 hover:bg-white/15"
                   aria-label="Exit test"
                 >
-                  Esc ✕
+                  Esc <X className="size-3.5" aria-hidden="true" />
                 </button>
               </div>
             </div>

@@ -1,3 +1,4 @@
+import { ChevronDown, Menu } from 'lucide-react'
 import type { Theme, Tool } from '../types'
 
 interface Props {
@@ -70,15 +71,12 @@ export function TopMenu({ tool, onToolChange, theme, onOpenSettings }: Props) {
                 : [option]
             })}
           </select>
-          {/* Custom chevron, since appearance-none removes the native one. */}
-          <svg
+          {/* Chevron, since appearance-none removes the native one. */}
+          <ChevronDown
             className="pointer-events-none absolute right-3 size-4 text-[var(--text-secondary)]"
-            viewBox="0 0 16 16"
-            fill="none"
+            strokeWidth={1.5}
             aria-hidden="true"
-          >
-            <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          />
         </label>
 
         <button
@@ -88,19 +86,8 @@ export function TopMenu({ tool, onToolChange, theme, onOpenSettings }: Props) {
           className="flex size-11 flex-none cursor-pointer items-center justify-center justify-self-end text-[var(--text-primary)]"
         >
           <span className="sr-only">Open settings</span>
-          {/* Lucide "menu" (hamburger), sized to sit optically next to the logo circle */}
-          <svg
-            viewBox="0 0 24 24"
-            className="size-8"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
+          {/* Hamburger, sized to sit optically next to the logo circle */}
+          <Menu className="size-8" aria-hidden="true" />
         </button>
       </nav>
     </div>

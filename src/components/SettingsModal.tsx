@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Copy, Moon, Sun } from 'lucide-react'
 import { UNIT_LABELS, UNITS } from '../lib/units'
 import type { Theme, Unit } from '../types'
 import { Dialog, DialogSection } from './Dialog'
@@ -12,27 +13,11 @@ interface Props {
   onClose: () => void
 }
 
-const SunIcon = () => (
-  <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-    <circle cx="12" cy="12" r="4.5" />
-    <path
-      strokeLinecap="round"
-      d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"
-    />
-  </svg>
-)
-
-const MoonIcon = () => (
-  <svg viewBox="0 0 24 24" className="size-5" fill="currentColor" aria-hidden="true">
-    <path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z" />
-  </svg>
-)
-
 // null models "Auto"; the two concrete themes carry an icon, Auto is a text label.
 const THEME_OPTIONS: { value: Theme | null; label: string; icon?: React.ReactNode }[] = [
   { value: null, label: 'Auto' },
-  { value: 'light', label: 'Light', icon: <SunIcon /> },
-  { value: 'dark', label: 'Dark', icon: <MoonIcon /> },
+  { value: 'light', label: 'Light', icon: <Sun className="size-5" aria-hidden="true" /> },
+  { value: 'dark', label: 'Dark', icon: <Moon className="size-5" aria-hidden="true" /> },
 ]
 
 const segClass = (selected: boolean) =>
@@ -115,20 +100,7 @@ export function SettingsModal({ themeChoice, onThemeChange, unit, onUnitChange, 
             onClick={copyPermalink}
             className="inline-flex cursor-pointer items-center gap-1.5 self-start text-sm font-semibold text-[var(--series-1)]"
           >
-            {/* Lucide "copy" */}
-            <svg
-              viewBox="0 0 24 24"
-              className="size-4 flex-none"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
-              <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-            </svg>
+            <Copy className="size-4 flex-none" aria-hidden="true" />
             <span className="underline">{copied ? 'Copied!' : 'Copy permalink to this view'}</span>
           </button>
         </DialogSection>

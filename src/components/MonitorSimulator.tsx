@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { Grid, PerspectiveCamera } from '@react-three/drei'
+import { FoldVertical, Grid2x2 } from 'lucide-react'
 import * as THREE from 'three'
 import {
   DEFAULT_SIMULATOR,
@@ -619,23 +620,7 @@ function TopDown({
           title="Reset to the set distance"
           className="absolute right-2 bottom-2 flex cursor-pointer items-center gap-1.5 rounded-md bg-black/55 px-2 py-1 text-xs text-white hover:bg-black/70"
         >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="size-3.5"
-            aria-hidden="true"
-          >
-            <path d="m17 3-5 5-5-5h10" />
-            <path d="m17 21-5-5-5 5h10" />
-            <path d="M4 12H2" />
-            <path d="M10 12H8" />
-            <path d="M16 12h-2" />
-            <path d="M22 12h-2" />
-          </svg>
+          <FoldVertical className="size-3.5" aria-hidden="true" />
           Reset
         </button>
       )}
@@ -951,20 +936,7 @@ export default function MonitorSimulator({ simulator, setSimulator, monitors, un
             title="Center the view on the screen"
             className="absolute right-2 bottom-2 flex cursor-pointer items-center gap-1.5 rounded-md bg-black/55 px-2 py-1 text-xs text-white hover:bg-black/70"
           >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="size-3.5"
-              aria-hidden="true"
-            >
-              <rect width="18" height="18" x="3" y="3" rx="2" />
-              <path d="M3 12h18" />
-              <path d="M12 3v18" />
-            </svg>
+            <Grid2x2 className="size-3.5" aria-hidden="true" />
             Center
           </button>
         )}
