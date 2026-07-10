@@ -6,7 +6,7 @@
 // on the fly, sharing the app's aliases/config) — no separate bundling step.
 import { createServer } from 'vite'
 import { existsSync } from 'node:fs'
-import { mkdir, readdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 const DIST = 'dist'
@@ -29,7 +29,8 @@ const vite = await createServer({
   logLevel: 'warn',
 })
 try {
-  const { renderStaticPages, renderSitemap, renderPageIndex } = await vite.ssrLoadModule('/src/seo/render.tsx')
+  const { renderStaticPages, renderSitemap, renderPageIndex, renderHomeLinksFooter } =
+    await vite.ssrLoadModule('/src/seo/render.tsx')
   const pages = renderStaticPages({ cssHref })
   for (const page of pages) {
     const dir = join(DIST, page.path)
@@ -46,6 +47,17 @@ try {
   await mkdir(join(DIST, index.path), { recursive: true })
   await writeFile(join(DIST, index.path, 'index.html'), index.html)
   console.log(`wrote ${join(index.path, 'index.html')} (debug index, unlisted)`)
+
+  // Inject a crawlable "Monitor guides" footer into the SPA shell so the landing
+  // pages are reachable by internal links. It goes after #root, which React
+  // owns and never touches, so the app is unaffected.
+  const indexPath = join(DIST, 'index.html')
+  const shell = await readFile(indexPath, 'utf8')
+  const footer = renderHomeLinksFooter()
+  if (shell.includes('</body>') && !shell.includes('Monitor guides')) {
+    await writeFile(indexPath, shell.replace('</body>', `    ${footer}\n  </body>`))
+    console.log('injected home guides footer into index.html')
+  }
 
   console.log(`\n${pages.length} SEO page(s) generated.`)
 } finally {

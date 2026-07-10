@@ -128,3 +128,53 @@ ${sections}
 `
   return { path: PAGE_INDEX_PATH, html }
 }
+
+/** A short, human anchor label for the home-page guides footer. */
+function footerLabel(page: StaticPage): string {
+  switch (page.kind) {
+    case 'resolution':
+      return `${page.props.marketingName} ${page.props.resWidth}×${page.props.resHeight}`
+    case 'size':
+      return `${page.props.diagonal}″ monitor resolutions`
+    case 'aspect':
+      return `${page.props.panels.map((p) => p.ratioName).join(' vs ')} at ${page.props.diagonal}″`
+    case 'curve':
+      return `${page.props.diagonal}″ ${page.props.resWidth}×${page.props.resHeight} curvature`
+    case 'curve-concept':
+      return 'What monitor curvature (R) means'
+  }
+}
+
+/** Footer link groups, in display order (curvature comparison + concept share one). */
+const FOOTER_GROUPS: { title: string; kinds: StaticPage['kind'][] }[] = [
+  { title: 'Monitor sizes', kinds: ['size'] },
+  { title: 'Resolutions', kinds: ['resolution'] },
+  { title: 'Aspect ratios', kinds: ['aspect'] },
+  { title: 'Curvature', kinds: ['curve', 'curve-concept'] },
+]
+
+/**
+ * A crawlable "Monitor guides" footer for the app's index.html, so the landing
+ * pages are reachable by internal links (not just the sitemap). Returned as an
+ * inline-styled HTML string — the build script injects it after #root, which
+ * React never touches. Uses runtime CSS variables so it matches the theme.
+ */
+export function renderHomeLinksFooter(): string {
+  const pages = getStaticPages()
+  const sections = FOOTER_GROUPS.map(({ title, kinds }) => {
+    const items = pages.filter((p) => kinds.includes(p.kind))
+    if (items.length === 0) return ''
+    const links = items
+      .map(
+        (p) =>
+          `<li><a href="${p.path}/" style="color:var(--series-1);text-decoration:none">${esc(footerLabel(p))}</a></li>`,
+      )
+      .join('')
+    return `<div><h3 style="margin:0 0 .4rem;font-size:13px;font-weight:600;color:var(--text-primary)">${esc(title)}</h3><ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.3rem;font-size:13px">${links}</ul></div>`
+  }).join('')
+
+  return `<footer style="max-width:960px;margin:1.5rem auto 2.5rem;padding:1.25rem 1rem 0;border-top:1px solid var(--border);color:var(--text-secondary)">
+  <h2 style="margin:0 0 .75rem;font-size:14px;font-weight:600;color:var(--text-secondary)">Monitor guides</h2>
+  <div style="display:flex;flex-wrap:wrap;gap:1.25rem 2.5rem">${sections}</div>
+</footer>`
+}
