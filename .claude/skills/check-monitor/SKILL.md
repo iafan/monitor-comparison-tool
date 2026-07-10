@@ -59,9 +59,21 @@ Dell ultrawide"), first identify the exact model, then proceed.
    new `src/data/models/<class-id>.ts` file + its import line in `index.ts` are needed.
    Also produce a **`MODEL_SOURCES` entry** for `src/data/modelSources.ts`, keyed by the
    same model id, listing every source you actually used as `{ name, url }`.
-   (The Custom-mode resolution/curvature pickers in `src/constants.ts` — `PRESETS`,
-   `CURVATURE_PRESETS` — are separate; mention them only if a resolution/radius the tool
-   can't yet offer is worth adding.)
+6. **Keep the Custom-mode pickers in sync (`src/constants.ts`).** The pickers —
+   `PRESETS` (resolutions) and `CURVATURE_PRESETS` (radii in mm) — are separate from the
+   class list, but they must be kept complete. **Whenever a monitor introduces a
+   resolution or curvature value not already listed there, add it** (don't just mention
+   it):
+   - `PRESETS` — if `<width>×<height>` isn't present, add a `{ label, resWidth, resHeight }`
+     entry. The `label` (e.g. `'6K — 6144 × 3456'`) also feeds the SEO pages' marketing-name
+     map, so a missing entry makes that resolution render as a raw pixel count. Keep the
+     list ordered by width, then height, matching the surrounding entries.
+   - `CURVATURE_PRESETS` — if the radius (e.g. `1900`, `4200`) isn't in the array, add it
+     and keep the array sorted ascending. A class can carry a `curveRadius` the picker
+     doesn't list, so the Custom-mode curvature picker can't reproduce that curve until
+     it's added.
+   Call out in your report which `PRESETS` / `CURVATURE_PRESETS` additions (if any) the
+   monitor requires, alongside the class/model/`MODEL_SOURCES` entries.
 
 ## Active-area geometry
 
