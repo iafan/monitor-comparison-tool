@@ -109,7 +109,7 @@ export function renderPageIndex(): { path: string; html: string } {
       const lis = items
         .map((p) => `      <li><a href="../${p.path}/">/${p.path}/</a> — ${esc(p.title)}</li>`)
         .join('\n')
-      return `    <h2>${esc(label)} <small>&lt;${component}&gt; · ${items.length}</small></h2>\n    <ul>\n${lis}\n    </ul>`
+      return `    <h2>${esc(label)} <small>&lt;${component}&gt;</small></h2>\n    <ol>\n${lis}\n    </ol>`
     })
     .join('\n')
   const html = `<!doctype html>
@@ -122,7 +122,6 @@ export function renderPageIndex(): { path: string; html: string } {
   </head>
   <body>
     <h1>Generated explanation pages (${pages.length})</h1>
-    <p>Internal debug index — not linked from the sitemap.</p>
 ${sections}
   </body>
 </html>
