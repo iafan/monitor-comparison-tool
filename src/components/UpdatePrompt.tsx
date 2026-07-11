@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
+import { EtchingIcon } from './EtchingIcon'
 
 // Keep the overlay up for at least this long so a fast update doesn't just
 // flash — it should read as a deliberate "updating" moment.
@@ -63,9 +64,10 @@ export function UpdatePrompt() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={dismiss}>
       <div
-        className="rounded-lg bg-black/55 px-5 py-3 text-xs text-white shadow"
+        className="flex items-center gap-2 rounded-lg bg-black/55 px-4 py-2.5 text-xs text-white shadow"
         onClick={(e) => e.stopPropagation()}
       >
+        <EtchingIcon size={18} />
         Updating…
       </div>
     </div>
