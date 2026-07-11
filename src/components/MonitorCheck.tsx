@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { MouseEvent, ReactNode } from 'react'
 import { ArrowLeft, ArrowRight, X } from 'lucide-react'
 import { Intro } from './Intro'
 import { useSwipeDown } from '../hooks/useSwipeDown'
@@ -261,6 +262,42 @@ function PatternContent({ pattern, showLabels, live = false }: { pattern: Patter
   return null
 }
 
+/**
+ * Shared pill styling for every on-screen-display element (the top bar and the
+ * two nav buttons): plain semi-transparent black, matching the in-pattern labels.
+ */
+const OSD_PILL = 'rounded-full border border-white/20 bg-black/70 text-white shadow-lg'
+
+/**
+ * An interactive OSD control. The hover highlight is a dedicated white overlay
+ * layer (via group-hover) painted on top of the dark fill — NOT a translucent
+ * `hover:bg-*`, which would overwrite the base color and let the test pattern
+ * behind bleed through, so the button reads identically over any screen.
+ */
+function OsdButton({
+  onClick,
+  label,
+  className = '',
+  children,
+}: {
+  onClick: (e: MouseEvent) => void
+  label: string
+  className?: string
+  children: ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className={`group pointer-events-auto cursor-pointer overflow-hidden ${className}`}
+    >
+      <span className="pointer-events-none absolute inset-0 bg-white/0 transition-colors duration-150 group-hover:bg-white/15" />
+      <span className="relative flex items-center justify-center gap-1">{children}</span>
+    </button>
+  )
+}
+
 interface Props {
   /** Selected screen id (from the URL/app state), or null for the tile grid. */
   screen: string | null
@@ -406,51 +443,48 @@ export function MonitorCheck({ screen, setScreen }: Props) {
           >
             {/* Top OSD bar */}
             <div className="absolute inset-x-0 top-0 flex justify-center p-4">
-              <div className="pointer-events-auto flex items-center gap-3 rounded-full border border-white/20 bg-black/70 px-4 py-2 text-sm text-white shadow-lg backdrop-blur">
+              <div className={`pointer-events-auto flex items-center gap-3 px-4 py-2 text-sm ${OSD_PILL}`}>
                 <span className="tabular-nums">
                   {active + 1} / {PATTERNS.length} · {current?.label}
                 </span>
-                <button
-                  type="button"
+                <OsdButton
                   onClick={(e) => {
                     e.stopPropagation()
                     close()
                   }}
-                  className="ml-1 inline-flex cursor-pointer items-center gap-1 rounded px-2 py-1 hover:bg-white/15"
-                  aria-label="Exit test"
+                  label="Exit test"
+                  className="relative ml-1 rounded px-2 py-1"
                 >
                   Esc <X className="size-3.5" aria-hidden="true" />
-                </button>
+                </OsdButton>
               </div>
             </div>
 
             {/* Previous — vertically centered on the left edge */}
-            <button
-              type="button"
+            <OsdButton
               onClick={(e) => {
                 e.stopPropagation()
                 step(-1)
                 pokeHint()
               }}
-              className="pointer-events-auto absolute left-4 top-1/2 -translate-y-1/2 cursor-pointer rounded-full border border-white/20 bg-black/70 p-3 text-white shadow-lg backdrop-blur hover:bg-white/15"
-              aria-label="Previous pattern"
+              label="Previous pattern"
+              className={`absolute left-4 top-1/2 -translate-y-1/2 p-3 ${OSD_PILL}`}
             >
               <ArrowLeft className="h-6 w-6" />
-            </button>
+            </OsdButton>
 
             {/* Next — vertically centered on the right edge */}
-            <button
-              type="button"
+            <OsdButton
               onClick={(e) => {
                 e.stopPropagation()
                 step(1)
                 pokeHint()
               }}
-              className="pointer-events-auto absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer rounded-full border border-white/20 bg-black/70 p-3 text-white shadow-lg backdrop-blur hover:bg-white/15"
-              aria-label="Next pattern"
+              label="Next pattern"
+              className={`absolute right-4 top-1/2 -translate-y-1/2 p-3 ${OSD_PILL}`}
             >
               <ArrowRight className="h-6 w-6" />
-            </button>
+            </OsdButton>
           </div>
         )}
       </div>
