@@ -1,10 +1,27 @@
 import { useEffect, useRef, useState } from 'react'
+import type { MouseEvent } from 'react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { EtchingIcon } from './EtchingIcon'
 
 // Keep the overlay up for at least this long so a fast update doesn't just
 // flash — it should read as a deliberate "updating" moment.
 const MIN_VISIBLE_MS = 500
+
+/**
+ * The visible "Updating…" chip: the etching icon plus a label in a small dark
+ * pill. Exported so the debug page can preview the exact same control.
+ */
+export function UpdatingChip({ onClick }: { onClick?: (e: MouseEvent) => void }) {
+  return (
+    <div
+      className="flex items-center gap-2 rounded-lg bg-black/55 px-4 py-2.5 text-xs text-white shadow"
+      onClick={onClick}
+    >
+      <EtchingIcon size={18} />
+      Updating…
+    </div>
+  )
+}
 
 /**
  * When a new app version is available, show a small centered "Updating…" overlay
@@ -63,13 +80,7 @@ export function UpdatePrompt() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={dismiss}>
-      <div
-        className="flex items-center gap-2 rounded-lg bg-black/55 px-4 py-2.5 text-xs text-white shadow"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <EtchingIcon size={18} />
-        Updating…
-      </div>
+      <UpdatingChip onClick={(e) => e.stopPropagation()} />
     </div>
   )
 }

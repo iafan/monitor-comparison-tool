@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { EtchingIcon } from './EtchingIcon'
+import { UpdatingChip } from './UpdatePrompt'
 
 function resolvedTheme(): 'light' | 'dark' {
   const attr = document.documentElement.getAttribute('data-theme')
@@ -21,7 +22,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 // Each debug tool is a self-contained section. Add new ones below and drop a
 // <Section> for it into Debug().
 
-const ETCH_SIZES = [18, 27, 36] as const
+const ETCH_SIZES = [18, 24, 30] as const
 
 function EtchingSection({ theme }: { theme: 'light' | 'dark' }) {
   const iconSrc = `${import.meta.env.BASE_URL}${theme === 'dark' ? 'icon-dark.svg' : 'icon.svg'}`
@@ -41,6 +42,34 @@ function EtchingSection({ theme }: { theme: 'light' | 'dark' }) {
         </div>
         <span className="text-xs text-[var(--text-muted)]">target</span>
       </div>
+    </div>
+  )
+}
+
+/**
+ * Renders the real "Updating…" overlay control (the PWA update chip): inline for
+ * a static look, plus a button to preview it as the live full-screen centered
+ * overlay (click anywhere to dismiss, exactly like the real one).
+ */
+function UpdateOverlaySection() {
+  const [overlay, setOverlay] = useState(false)
+  return (
+    <div className="flex flex-wrap items-center gap-6">
+      <div className="flex items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface-1)] p-4">
+        <UpdatingChip />
+      </div>
+      <button
+        type="button"
+        onClick={() => setOverlay(true)}
+        className="min-h-11 cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-4 text-sm font-semibold"
+      >
+        Show full overlay
+      </button>
+      {overlay && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setOverlay(false)}>
+          <UpdatingChip onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
     </div>
   )
 }
@@ -81,6 +110,10 @@ export function Debug() {
 
         <Section title="EtchingIcon — loading animation">
           <EtchingSection theme={theme} />
+        </Section>
+
+        <Section title="UpdatePrompt — “Updating…” overlay">
+          <UpdateOverlaySection />
         </Section>
 
         {/* Add future debug sections here. */}
