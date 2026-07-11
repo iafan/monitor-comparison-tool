@@ -21,7 +21,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 // Each debug tool is a self-contained section. Add new ones below and drop a
 // <Section> for it into Debug().
 
-const ETCH_SIZES = [18, 27, 36, 54, 90, 144]
+const ETCH_SIZES = [18, 27, 36] as const
 
 function EtchingSection({ theme }: { theme: 'light' | 'dark' }) {
   const iconSrc = `${import.meta.env.BASE_URL}${theme === 'dark' ? 'icon-dark.svg' : 'icon.svg'}`
@@ -37,7 +37,7 @@ function EtchingSection({ theme }: { theme: 'light' | 'dark' }) {
       ))}
       <div className="flex flex-col items-center gap-2">
         <div className="flex items-center justify-center rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface-1)] p-4">
-          <img src={iconSrc} width={90} height={90} className="size-[90px] rounded-full" alt="Monitorture icon" />
+          <img src={iconSrc} width={36} height={36} className="size-[36px] rounded-full" alt="Monitorture icon" />
         </div>
         <span className="text-xs text-[var(--text-muted)]">target</span>
       </div>

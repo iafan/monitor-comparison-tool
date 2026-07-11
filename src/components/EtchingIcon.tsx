@@ -1,22 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
 
+/** The only supported render sizes (CSS px). All multiples of 3 so 3px/1px
+ *  blocks tile evenly. */
+type EtchSize = 18 | 27 | 36
+
 interface Props {
-  /**
-   * Rendered square size in CSS px. Rounded to a multiple of 3 so the two
-   * passes (3→1 px blocks) tile evenly. Defaults to 18 — sized to sit next to
-   * body text, smaller than the 32px logo.
-   */
-  size?: number
+  /** Rendered square size in CSS px — one of 18, 27, 36. Defaults to 18. */
+  size?: EtchSize
   className?: string
 }
 
 // Coarse→fine block sizes for the two etching passes.
 const PASSES = [3, 1] as const
-// Wall-clock budget per pass (ms): the coarse pass lands deliberately, the fine
-// pass sweeps quickly, so the icon appears to sharpen into focus.
-const PASS_MS: Record<number, number> = { 3: 850, 1: 1500 }
+// How long the cursor sits on a block before it's revealed and the cursor
+// advances — one block per step, so the white head is always visible.
+const STEP_MS = 16
 // Pause on the finished icon before clearing and re-etching.
-const HOLD_MS = 550
+const HOLD_MS = 600
 
 function isDarkTheme(): boolean {
   const attr = document.documentElement.getAttribute('data-theme')
@@ -31,20 +31,21 @@ interface Op {
   w: number
   h: number
   fill: string
-  dwell: number
 }
 
 /**
  * A tiny thematic "loading" animation: the app's own icon plots itself in, like
  * a pen plotter etching an image — two coarse-to-fine passes (3px, then 1px
- * blocks) scanned left→right, top→bottom. A white cursor head sits on
- * each block for a beat before it's filled with the block's real color, so you
- * watch it draw. Only blocks touching the icon's circle are etched (the corners
- * are skipped), and the canvas is clipped to that circle. Loops.
+ * blocks) scanned left→right, top→bottom. A white cursor head sits on each
+ * block for a beat before it's filled with the block's real color, so you watch
+ * it draw — exactly one block is revealed per step, so the head is always on
+ * screen leading the reveal. Only blocks touching the icon's inscribed circle
+ * are etched (the corners are skipped), and the canvas is clipped to that
+ * circle. Loops.
  *
- * Self-contained and reusable: pass `size`. Theme-aware via the resolved
- * `data-theme` on <html> (re-inits if the theme flips while mounted). Honors
- * prefers-reduced-motion by painting the finished icon with no animation.
+ * Self-contained and reusable: pass `size` (18/27/36). Theme-aware via the
+ * resolved `data-theme` on <html> (re-inits if the theme flips while mounted).
+ * Honors prefers-reduced-motion by painting the finished icon with no animation.
  */
 export function EtchingIcon({ size = 18, className }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -64,10 +65,10 @@ export function EtchingIcon({ size = 18, className }: Props) {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    // N = logical grid (a multiple of 9). `cell` is the device-px size of one
-    // logical cell — kept an integer so blocks stay crisp; the backing store is
-    // then CSS-scaled down to `size` px.
-    const N = Math.max(3, Math.round(size / 3) * 3)
+    // N = logical grid = size (already a multiple of 3). `cell` is the device-px
+    // size of one logical cell — an integer so blocks stay crisp; the backing
+    // store is then CSS-scaled down to `size` px.
+    const N = size
     const dpr = Math.min(3, Math.max(1, window.devicePixelRatio || 1))
     const cell = Math.max(1, Math.round((size * dpr) / N))
     const dim = N * cell
@@ -89,8 +90,7 @@ export function EtchingIcon({ size = 18, className }: Props) {
     img.onload = () => {
       if (cancelled) return
 
-      // Sample the icon at the logical grid — one averaged color per cell
-      // (smoothing on downsamples the 1200px art into representative pixels).
+      // Sample the icon at the logical grid — one averaged color per cell.
       const off = document.createElement('canvas')
       off.width = N
       off.height = N
@@ -100,8 +100,6 @@ export function EtchingIcon({ size = 18, className }: Props) {
       const data = octx.getImageData(0, 0, N, N).data
 
       const R = N / 2
-      // Keep a block only if it touches the inscribed circle (nearest point to
-      // center within R). Edge blocks are kept; border-radius clips the overflow.
       const touchesCircle = (x: number, y: number, w: number, h: number) => {
         const nx = Math.max(x, Math.min(R, x + w))
         const ny = Math.max(y, Math.min(R, y + h))
@@ -123,21 +121,16 @@ export function EtchingIcon({ size = 18, className }: Props) {
         return `rgb(${Math.round(r / n)},${Math.round(g / n)},${Math.round(b / n)})`
       }
 
-      // Ordered op list: three passes, each raster-scanned L→R, T→B.
+      // Ordered op list: two passes, each raster-scanned L→R, T→B.
       const ops: Op[] = []
-      for (const B of PASSES) {
-        const passOps: Op[] = []
+      for (const B of PASSES)
         for (let by = 0; by < N; by += B)
           for (let bx = 0; bx < N; bx += B) {
             const w = Math.min(B, N - bx)
             const h = Math.min(B, N - by)
             if (!touchesCircle(bx, by, w, h)) continue
-            passOps.push({ x: bx, y: by, w, h, fill: avgColor(bx, by, w, h), dwell: 0 })
+            ops.push({ x: bx, y: by, w, h, fill: avgColor(bx, by, w, h) })
           }
-        const dwell = (PASS_MS[B] ?? 800) / Math.max(1, passOps.length)
-        for (const o of passOps) o.dwell = dwell
-        ops.push(...passOps)
-      }
 
       const fill = (o: Op, c: CanvasRenderingContext2D) => {
         c.fillStyle = o.fill
@@ -149,28 +142,30 @@ export function EtchingIcon({ size = 18, className }: Props) {
         return
       }
 
-      // `committed` holds painted blocks; the visible canvas = committed + the
-      // white cursor head on the block that's about to be filled.
+      // `committed` holds revealed blocks; the visible canvas = committed + the
+      // white cursor head parked on the block that's about to be revealed.
       const committed = document.createElement('canvas')
       committed.width = dim
       committed.height = dim
       const cctx = committed.getContext('2d')!
 
       const drawCursor = (o: Op) => {
-        const x = o.x * cell,
-          y = o.y * cell,
-          w = o.w * cell,
-          h = o.h * cell
+        const bw = o.w * cell
+        const bh = o.h * cell
+        // Floor the head to ~1.6 cells so a single-pixel block still reads.
+        const s = Math.max(bw, bh, Math.ceil(cell * 1.6))
+        const x = o.x * cell + bw / 2 - s / 2
+        const y = o.y * cell + bh / 2 - s / 2
         ctx.save()
-        ctx.shadowColor = 'rgba(255,255,255,0.9)'
-        ctx.shadowBlur = cell * 1.5
+        ctx.shadowColor = 'rgba(255,255,255,0.95)'
+        ctx.shadowBlur = cell * 2.2
         ctx.fillStyle = '#fff'
-        ctx.fillRect(x, y, w, h)
+        ctx.fillRect(x, y, s, s)
         ctx.restore()
         // Faint dark edge so the head reads on light areas of the icon.
-        ctx.strokeStyle = 'rgba(0,0,0,0.35)'
+        ctx.strokeStyle = 'rgba(0,0,0,0.4)'
         ctx.lineWidth = 1
-        ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1)
+        ctx.strokeRect(x + 0.5, y + 0.5, s - 1, s - 1)
       }
       const render = (headIndex: number) => {
         ctx.clearRect(0, 0, dim, dim)
@@ -189,7 +184,7 @@ export function EtchingIcon({ size = 18, className }: Props) {
         last = t
 
         if (i >= ops.length) {
-          // Done — hold the finished icon, then clear and re-etch.
+          // Done — hold the finished icon (no cursor), then clear and re-etch.
           holding += dt
           if (holding >= HOLD_MS) {
             cctx.clearRect(0, 0, dim, dim)
@@ -202,14 +197,15 @@ export function EtchingIcon({ size = 18, className }: Props) {
           return
         }
 
+        // Cursor parked on the current block; reveal AT MOST one block per step
+        // so the head is always visible for at least a frame.
+        render(i)
         acc += dt
-        // Commit every block the cursor has dwelt on, then park it on the next.
-        while (i < ops.length && acc >= ops[i].dwell) {
-          acc -= ops[i].dwell
+        if (acc >= STEP_MS) {
+          acc -= STEP_MS
           fill(ops[i], cctx)
           i++
         }
-        render(i)
         raf = requestAnimationFrame(loop)
       }
       raf = requestAnimationFrame(loop)
