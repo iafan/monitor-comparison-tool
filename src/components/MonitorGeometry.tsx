@@ -200,8 +200,10 @@ function VisibleAreaScreen({ value, onChange, onClose }: AreaProps) {
   )
 
   // Arrows adjust the selected value (Up/Right increase, Down/Left decrease; hold
-  // Shift for ×10). On the Move row they slide the whole frame. Tab cycles the
-  // selection. Esc is handled by the parent.
+  // Shift for ×10). The Y edges are the exception — since Y grows downward, their
+  // arrows are reversed so Up/Down move the edge the way it looks on screen. On
+  // the Move row they slide the whole frame. Tab cycles the selection. Esc is
+  // handled by the parent.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const arrow =
@@ -215,8 +217,13 @@ function VisibleAreaScreen({ value, onChange, onClose }: AreaProps) {
           const dy = (e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0) * step
           commit(moveFrame(frame, dx, dy, size.W, size.H))
         } else {
-          const inc = e.key === 'ArrowUp' || e.key === 'ArrowRight'
           const key = AREA_FIELDS[sel].key
+          // Y grows downward, so for the Y edges reverse the arrows: Up moves the
+          // edge up (smaller Y), Down moves it down (larger Y).
+          const yField = key === 'topY' || key === 'botY'
+          const inc = yField
+            ? e.key === 'ArrowDown' || e.key === 'ArrowRight'
+            : e.key === 'ArrowUp' || e.key === 'ArrowRight'
           commit(clampFrame({ ...frame, [key]: frame[key] + (inc ? step : -step) }, size.W, size.H))
         }
       } else if (e.key === 'Enter' && sel === RESET_INDEX) {
