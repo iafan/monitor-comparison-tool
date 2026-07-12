@@ -30,6 +30,9 @@ const ASPECT = 3 / 2
 // Three's camera fov is vertical, so derive it from the horizontal at our 16:9.
 const H_FOV_DEG = 45
 const FOV_V_DEG = (Math.atan(Math.tan((H_FOV_DEG * Math.PI) / 360) / ASPECT) * 360) / Math.PI
+// Half the vertical FOV as a tangent — the image-plane half-extent. Used to turn a
+// dragged pixel into its angular size for direct-manipulation dragging (see dragSens).
+const TAN_HALF_FOV_V = Math.tan((FOV_V_DEG * Math.PI) / 360)
 
 // Bezel widths (inches). The bottom is a larger "chin", like a real monitor.
 const BEZEL_SIDE = 0.4
@@ -40,14 +43,7 @@ const MESH_SAMPLES = 72
 
 const deg2rad = (d: number) => (d * Math.PI) / 180
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n))
-const HEAD_DRAG_SENS = 0.25 // degrees of head turn per pixel dragged, at the reference width
-// The drag is tuned in degrees-per-pixel at the app's normal panel width. On a
-// much wider view (full screen on a large monitor) the same pixel delta is a far
-// smaller slice of the frame, so a fixed deg/px feels hypersensitive. Scale the
-// sensitivity down in proportion to how much wider the view is than this reference,
-// so a given fraction of the view width always maps to the same head turn. Views at
-// or below the reference (windowed, mobile) are left untouched (the min caps it at 1).
-const HEAD_DRAG_REF_WIDTH = 900 // px — the app's max content width, where 0.25 deg/px is tuned
+const HEAD_DRAG_SENS = 0.25 // degrees of head turn per pixel dragged (top-view control)
 const KEY_ANIM_MS = 180 // ease-in-out duration for a single arrow-key step
 const RECENTER_MS = 450 // ease-in-out duration for recenter / nominal-distance sync
 const EPS = 1e-6 // nudge so a value already on an integer steps to the next one
@@ -780,11 +776,15 @@ export default function MonitorSimulator({ simulator, setSimulator, monitors, un
     const [a, b] = Array.from(pointersRef.current.values())
     return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0
   }
-  // Degrees per dragged pixel, scaled so a fraction of the view width maps to a
-  // consistent head turn regardless of how large the (possibly full-screen) view is.
+  // Direct manipulation: one dragged pixel turns the head by that pixel's own
+  // angular size, so the grabbed point tracks the pointer 1:1 at any view size.
+  // The camera's image plane spans 2·tan(fov/2) over the rendered height, so the
+  // per-pixel angle is 2·tan(halfFovV)/height (radians). It's isotropic — the
+  // camera aspect follows the element — so the same scale drives yaw and pitch.
   const dragSens = () => {
-    const w = sceneRef.current?.clientWidth ?? HEAD_DRAG_REF_WIDTH
-    return HEAD_DRAG_SENS * Math.min(1, HEAD_DRAG_REF_WIDTH / w)
+    const h = sceneRef.current?.clientHeight
+    if (!h) return HEAD_DRAG_SENS
+    return ((2 * TAN_HALF_FOV_V) / h) * (180 / Math.PI)
   }
   const onPointerDown = (e: React.PointerEvent) => {
     pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
