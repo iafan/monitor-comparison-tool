@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { Grid, PerspectiveCamera } from '@react-three/drei'
-import { FoldVertical, Grid2x2 } from 'lucide-react'
+import { FoldVertical, Grid2x2, Maximize, Minimize } from 'lucide-react'
 import * as THREE from 'three'
 import {
   DEFAULT_SIMULATOR,
@@ -669,6 +669,7 @@ export default function MonitorSimulator({ simulator, setSimulator, monitors, un
   const [pitch, setPitch] = useState(0)
   const [actualDistance, setActualDistance] = useState(simulator.distanceIn)
   const centered = headAngle === 0 && pitch === 0
+  const [isFullscreen, setIsFullscreen] = useState(false)
 
   // Live mirrors (read inside once-registered handlers / rAF ticks) plus "goal"
   // values that integer stepping advances from, so repeated presses reliably go
@@ -866,6 +867,21 @@ export default function MonitorSimulator({ simulator, setSimulator, monitors, un
     return () => window.removeEventListener('keydown', onKey)
   }, [tweenHead, tweenDist])
 
+  // Full-screen the 3D scene. Track the browser's fullscreen state so the button
+  // reflects exits triggered elsewhere (Esc, the OS), not just our own toggle.
+  const toggleFullscreen = useCallback(() => {
+    if (document.fullscreenElement) {
+      void document.exitFullscreen()
+    } else {
+      void sceneRef.current?.requestFullscreen()
+    }
+  }, [])
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(document.fullscreenElement === sceneRef.current)
+    document.addEventListener('fullscreenchange', onChange)
+    return () => document.removeEventListener('fullscreenchange', onChange)
+  }, [])
+
   // Trackpad pinch arrives as a wheel event with ctrlKey set. A non-passive
   // listener is required to preventDefault (otherwise the browser page-zooms).
   // Plain scrolling (no ctrlKey) is left untouched.
@@ -941,7 +957,22 @@ export default function MonitorSimulator({ simulator, setSimulator, monitors, un
           pitch={pitch}
           dark={theme === 'dark'}
         />
-        {/* Recenter control — shown only when the view is off-center. */}
+        {/* Full-screen toggle, top-right. */}
+        <button
+          type="button"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={toggleFullscreen}
+          title={isFullscreen ? 'Exit full screen' : 'View full screen'}
+          aria-label={isFullscreen ? 'Exit full screen' : 'View full screen'}
+          className="absolute top-2 right-2 flex cursor-pointer items-center rounded-md bg-black/55 p-1.5 text-white hover:bg-black/70"
+        >
+          {isFullscreen ? (
+            <Minimize className="size-3.5" aria-hidden="true" />
+          ) : (
+            <Maximize className="size-3.5" aria-hidden="true" />
+          )}
+        </button>
+        {/* Recenter control, bottom-right — shown only when the view is off-center. */}
         {!centered && (
           <button
             type="button"
