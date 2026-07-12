@@ -114,7 +114,7 @@ function DeviceStripes({ orientation }: { orientation: Orientation }) {
 function HalfLabel({ text, show }: { text: string; show: boolean }) {
   return (
     <span
-      className={`pointer-events-none absolute left-2 top-2 rounded bg-black/70 px-1.5 py-0.5 text-xs font-medium text-white transition-opacity duration-300 ${
+      className={`pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded bg-black/70 px-1.5 py-0.5 text-xs font-medium text-white transition-opacity duration-300 ${
         show ? 'opacity-100' : 'opacity-0'
       }`}
     >
@@ -132,6 +132,8 @@ function SplitStripes({ orientation, showLabels }: { orientation: Orientation; s
       <div className="relative flex-1 overflow-hidden" style={{ background: cssStripes(orientation) }}>
         <HalfLabel text="CSS px" show={showLabels} />
       </div>
+      {/* 1px divider between the two halves — horizontal when stacked, vertical when side-by-side. */}
+      <div className={`flex-none bg-black ${stack ? 'h-px w-full' : 'h-full w-px'}`} />
       <div className="relative flex-1 overflow-hidden bg-white">
         <DeviceStripes orientation={orientation} />
         <HalfLabel text="Device px" show={showLabels} />
@@ -253,9 +255,11 @@ function RefreshRatePreview() {
  * true miniature screen (no scaling), not a separate approximation. `live`
  * enables the refresh screen's measurement loop (off for the tile grid).
  */
-function PatternContent({ pattern, showLabels, live = false }: { pattern: Pattern; showLabels: boolean; live?: boolean }) {
+function PatternContent({ pattern, live = false }: { pattern: Pattern; live?: boolean }) {
   if (pattern.fill) return <div className="h-full w-full" style={{ background: pattern.fill }} />
-  if (pattern.lines) return <SplitStripes orientation={pattern.lines} showLabels={showLabels} />
+  // Labels stay on for the whole live view (not tied to the auto-hiding hint); the
+  // tile-grid thumbnails pass live=false, so they render label-free.
+  if (pattern.lines) return <SplitStripes orientation={pattern.lines} showLabels={live} />
   if (pattern.render === 'gradient') return <GradientScreen />
   if (pattern.render === 'gamma') return <GammaScreen />
   if (pattern.render === 'refresh') return live ? <RefreshRateScreen /> : <RefreshRatePreview />
@@ -407,7 +411,7 @@ export function MonitorCheck({ screen, setScreen }: Props) {
                 }`}
                 aria-hidden="true"
               >
-                <PatternContent pattern={p} showLabels={false} />
+                <PatternContent pattern={p} />
               </span>
               <span className="px-1 text-sm font-semibold text-[var(--text-primary)]">{p.label}</span>
               <span className="px-1 pb-1 text-xs text-[var(--text-muted)]">{p.hint}</span>
@@ -432,7 +436,7 @@ export function MonitorCheck({ screen, setScreen }: Props) {
         role={active !== null ? 'img' : undefined}
         aria-label={current ? `${current.label} test pattern` : undefined}
       >
-        {active !== null && current && <PatternContent pattern={current} showLabels={showHint} live />}
+        {active !== null && current && <PatternContent pattern={current} live />}
 
         {active !== null && (
           <div
