@@ -665,7 +665,12 @@ export default function MonitorSimulator({ simulator, setSimulator, monitors, un
   const [pitch, setPitch] = useState(0)
   const [actualDistance, setActualDistance] = useState(simulator.distanceIn)
   const centered = headAngle === 0 && pitch === 0
-  const [isFullscreen, setIsFullscreen] = useState(false)
+  // Two fullscreen paths: the native Fullscreen API, and a CSS fallback (fixed
+  // inset-0) for platforms without it — notably iOS Safari, which exposes the API
+  // only on <video>. `isFullscreen` covers both, for the toggle button's state.
+  const [nativeFullscreen, setNativeFullscreen] = useState(false)
+  const [cssFullscreen, setCssFullscreen] = useState(false)
+  const isFullscreen = nativeFullscreen || cssFullscreen
 
   // Live mirrors (read inside once-registered handlers / rAF ticks) plus "goal"
   // values that integer stepping advances from, so repeated presses reliably go
@@ -867,20 +872,38 @@ export default function MonitorSimulator({ simulator, setSimulator, monitors, un
     return () => window.removeEventListener('keydown', onKey)
   }, [tweenHead, tweenDist])
 
-  // Full-screen the 3D scene. Track the browser's fullscreen state so the button
-  // reflects exits triggered elsewhere (Esc, the OS), not just our own toggle.
+  // Full-screen the 3D scene. Prefer the native API; fall back to a CSS full-cover
+  // (fixed inset-0) where it's missing or rejected, so iOS still expands the panel.
   const toggleFullscreen = useCallback(() => {
+    const el = sceneRef.current
+    if (!el) return
     if (document.fullscreenElement) {
       void document.exitFullscreen()
-    } else {
-      void sceneRef.current?.requestFullscreen()
+      return
     }
-  }, [])
+    if (cssFullscreen) {
+      setCssFullscreen(false)
+      return
+    }
+    if (el.requestFullscreen) {
+      el.requestFullscreen().catch(() => setCssFullscreen(true))
+    } else {
+      setCssFullscreen(true)
+    }
+  }, [cssFullscreen])
+  // Track native fullscreen so the button reflects exits triggered elsewhere (the
+  // OS chrome). Esc already exits native fullscreen; handle it for the CSS fallback.
   useEffect(() => {
-    const onChange = () => setIsFullscreen(document.fullscreenElement === sceneRef.current)
+    const onChange = () => setNativeFullscreen(document.fullscreenElement === sceneRef.current)
     document.addEventListener('fullscreenchange', onChange)
     return () => document.removeEventListener('fullscreenchange', onChange)
   }, [])
+  useEffect(() => {
+    if (!cssFullscreen) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setCssFullscreen(false)
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [cssFullscreen])
 
   // Trackpad pinch arrives as a wheel event with ctrlKey set. A non-passive
   // listener is required to preventDefault (otherwise the browser page-zooms).
@@ -936,10 +959,15 @@ export default function MonitorSimulator({ simulator, setSimulator, monitors, un
         </label>
       </div>
 
-      {/* First-person 3D view. Fixed 3:2 (human-field proportion) so the horizontal FOV is stable. */}
+      {/* First-person 3D view. Fixed 3:2 (human-field proportion) so the horizontal FOV is stable.
+          The CSS fallback covers the viewport (fixed inset-0) when native fullscreen is unavailable. */}
       <div
         ref={sceneRef}
-        className="relative aspect-[3/2] w-full cursor-grab touch-none overflow-hidden rounded-xl border border-[var(--border)] select-none active:cursor-grabbing"
+        className={
+          cssFullscreen
+            ? 'fixed inset-0 z-50 cursor-grab touch-none overflow-hidden bg-black select-none active:cursor-grabbing'
+            : 'relative aspect-[3/2] w-full cursor-grab touch-none overflow-hidden rounded-xl border border-[var(--border)] select-none active:cursor-grabbing'
+        }
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
