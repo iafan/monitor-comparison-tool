@@ -40,7 +40,14 @@ const MESH_SAMPLES = 72
 
 const deg2rad = (d: number) => (d * Math.PI) / 180
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n))
-const HEAD_DRAG_SENS = 0.25 // degrees of head turn per pixel dragged
+const HEAD_DRAG_SENS = 0.25 // degrees of head turn per pixel dragged, at the reference width
+// The drag is tuned in degrees-per-pixel at the app's normal panel width. On a
+// much wider view (full screen on a large monitor) the same pixel delta is a far
+// smaller slice of the frame, so a fixed deg/px feels hypersensitive. Scale the
+// sensitivity down in proportion to how much wider the view is than this reference,
+// so a given fraction of the view width always maps to the same head turn. Views at
+// or below the reference (windowed, mobile) are left untouched (the min caps it at 1).
+const HEAD_DRAG_REF_WIDTH = 900 // px — the app's max content width, where 0.25 deg/px is tuned
 const KEY_ANIM_MS = 180 // ease-in-out duration for a single arrow-key step
 const RECENTER_MS = 450 // ease-in-out duration for recenter / nominal-distance sync
 const EPS = 1e-6 // nudge so a value already on an integer steps to the next one
@@ -772,6 +779,12 @@ export default function MonitorSimulator({ simulator, setSimulator, monitors, un
     const [a, b] = Array.from(pointersRef.current.values())
     return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0
   }
+  // Degrees per dragged pixel, scaled so a fraction of the view width maps to a
+  // consistent head turn regardless of how large the (possibly full-screen) view is.
+  const dragSens = () => {
+    const w = sceneRef.current?.clientWidth ?? HEAD_DRAG_REF_WIDTH
+    return HEAD_DRAG_SENS * Math.min(1, HEAD_DRAG_REF_WIDTH / w)
+  }
   const onPointerDown = (e: React.PointerEvent) => {
     pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
     ;(e.target as Element).setPointerCapture?.(e.pointerId)
@@ -797,13 +810,14 @@ export default function MonitorSimulator({ simulator, setSimulator, monitors, un
     }
     const d = dragRef.current
     if (!d) return
+    const sens = dragSens()
     const nextAngle = clamp(
-      d.startAngle - (e.clientX - d.startX) * HEAD_DRAG_SENS,
+      d.startAngle - (e.clientX - d.startX) * sens,
       -SIMULATOR_HEAD_ANGLE_MAX,
       SIMULATOR_HEAD_ANGLE_MAX,
     )
     const nextPitch = clamp(
-      d.startPitch + (e.clientY - d.startY) * HEAD_DRAG_SENS,
+      d.startPitch + (e.clientY - d.startY) * sens,
       -SIMULATOR_PITCH_MAX,
       SIMULATOR_PITCH_MAX,
     )
