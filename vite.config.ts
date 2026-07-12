@@ -9,6 +9,9 @@ import { VitePWA } from 'vite-plugin-pwa'
 // referenced relative to index.html rather than an absolute base path.
 export default defineConfig({
   base: './',
+  // Listen on all interfaces so the dev server is reachable from other devices
+  // on the LAN (e.g. a phone) via the printed Network URL, not just localhost.
+  server: { host: true },
   plugins: [
     react(),
     tailwindcss(),
