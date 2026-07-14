@@ -17,6 +17,7 @@ import type { Monitor, SimulatorSettings, Unit } from '../types'
 import { Intro } from './Intro'
 import { MonitorPicker } from './MonitorPicker'
 import { NumberField } from './NumberField'
+import { OverlayButton } from './ui/OverlayButton'
 
 // The eye's simulated field of view. Three's camera fov is vertical; we fix the
 // front-view canvas to 3:2 — the proportion of the human forward field of view
@@ -616,16 +617,14 @@ function TopDown({
 
       {/* Reset the actual distance to the set (nominal) one — shown only when moved. */}
       {distanceIn !== nominalDistanceIn && (
-        <button
-          type="button"
-          onPointerDown={(e) => e.stopPropagation()}
+        <OverlayButton
           onClick={onReset}
           title="Reset to the set distance"
-          className="absolute right-2 bottom-2 flex cursor-pointer items-center gap-1.5 rounded-md bg-black/55 px-2 py-1 text-xs text-white hover:bg-black/70"
+          className="absolute right-2 bottom-2 gap-1.5 px-2 py-1 text-xs"
         >
           <FoldVertical className="size-3.5" aria-hidden="true" />
           Reset
-        </button>
+        </OverlayButton>
       )}
     </div>
   )
@@ -986,32 +985,28 @@ export default function MonitorSimulator({ simulator, setSimulator, monitors, un
           dark={theme === 'dark'}
         />
         {/* Full-screen toggle, top-right. */}
-        <button
-          type="button"
-          onPointerDown={(e) => e.stopPropagation()}
+        <OverlayButton
           onClick={toggleFullscreen}
           title={isFullscreen ? 'Exit full screen' : 'View full screen'}
           aria-label={isFullscreen ? 'Exit full screen' : 'View full screen'}
-          className="absolute top-2 right-2 flex cursor-pointer items-center rounded-md bg-black/55 p-1.5 text-white hover:bg-black/70"
+          className="absolute top-2 right-2 p-1.5"
         >
           {isFullscreen ? (
             <Minimize className="size-3.5" aria-hidden="true" />
           ) : (
             <Maximize className="size-3.5" aria-hidden="true" />
           )}
-        </button>
+        </OverlayButton>
         {/* Recenter control, bottom-right — shown only when the view is off-center. */}
         {!centered && (
-          <button
-            type="button"
-            onPointerDown={(e) => e.stopPropagation()}
+          <OverlayButton
             onClick={recenter}
             title="Center the view on the screen"
-            className="absolute right-2 bottom-2 flex cursor-pointer items-center gap-1.5 rounded-md bg-black/55 px-2 py-1 text-xs text-white hover:bg-black/70"
+            className="absolute right-2 bottom-2 gap-1.5 px-2 py-1 text-xs"
           >
             <Grid2x2 className="size-3.5" aria-hidden="true" />
             Center
-          </button>
+          </OverlayButton>
         )}
       </div>
 

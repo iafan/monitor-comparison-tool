@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { MouseEvent, ReactNode } from 'react'
 import { ArrowLeft, ArrowRight, X } from 'lucide-react'
 import { Intro } from './Intro'
+import { OverlayLabel } from './ui/OverlayLabel'
 import { useSwipeDown } from '../hooks/useSwipeDown'
 
 type Orientation = 'vertical' | 'horizontal'
@@ -34,7 +35,7 @@ const PATTERNS: Pattern[] = [
   { id: 'blue', label: 'Blue', hint: 'Subpixel faults, uniformity', fill: '#0000ff' },
   { id: 'vlines', label: 'Vertical lines (1px)', hint: 'CSS px vs device px — top / bottom', lines: 'vertical' },
   { id: 'hlines', label: 'Horizontal lines (1px)', hint: 'CSS px vs device px — left / right', lines: 'horizontal' },
-  { id: 'gradient', label: 'Gradient', hint: 'Banding & bit depth — stepped vs smooth', render: 'gradient' },
+  { id: 'gradient', label: 'Gradient', hint: 'Banding & bit depth — dark/light shades, stepped & smooth', render: 'gradient' },
   { id: 'gamma', label: 'Gamma', hint: 'Patch melts into stripes at correct gamma', render: 'gamma' },
   { id: 'refresh', label: 'Refresh rate', hint: 'Measured Hz; watch the box for stutter', render: 'refresh' },
 ]
@@ -61,8 +62,14 @@ function cssStripes(orientation: Orientation): string {
   return `repeating-linear-gradient(${dir}, #000, #000 1px, #fff 1px, #fff 2px)`
 }
 
-/** Stepped grayscale bands, 0–100% in 5% steps (21 values), shared by the tile and the screen. */
-const GRAD_BANDS = Array.from({ length: 21 }, (_, i) => Math.round((i / 20) * 255))
+/** Stepped grayscale ramp, 20 bands evenly spanning 0–255. */
+const GRAD_BANDS = Array.from({ length: 20 }, (_, i) => Math.round((i / 19) * 255))
+
+/** 10 darkest shades (0, 2, …, 18) — isolates black-crush and low-end banding. */
+const GRAD_DARK = Array.from({ length: 10 }, (_, i) => i * 2)
+
+/** 10 brightest shades (237, 239, …, 255) — isolates white-clip and high-end banding. */
+const GRAD_LIGHT = Array.from({ length: 10 }, (_, i) => 237 + i * 2)
 
 /**
  * Paints alternating 1-device-pixel stripes on a canvas backed at the true
@@ -113,13 +120,9 @@ function DeviceStripes({ orientation }: { orientation: Orientation }) {
 
 function HalfLabel({ text, show }: { text: string; show: boolean }) {
   return (
-    <span
-      className={`pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded bg-black/70 px-1.5 py-0.5 text-xs font-medium text-white transition-opacity duration-300 ${
-        show ? 'opacity-100' : 'opacity-0'
-      }`}
-    >
+    <OverlayLabel show={show} className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
       {text}
-    </span>
+    </OverlayLabel>
   )
 }
 
@@ -142,15 +145,37 @@ function SplitStripes({ orientation, showLabels }: { orientation: Orientation; s
   )
 }
 
-/** Top: 21 stepped grayscale bands (0–100% in 5% steps). Bottom: smooth ramp. */
-function GradientScreen() {
+/** A strip of discrete grayscale bands, each labelled with its 0–255 value. */
+function DiscreteBands({ values, showLabels }: { values: number[]; showLabels: boolean }) {
+  return (
+    <div className="flex flex-1">
+      {values.map((v, i) => (
+        <div
+          key={i}
+          className="flex flex-1 items-center justify-center overflow-hidden"
+          style={{ background: `rgb(${v}, ${v}, ${v})` }}
+        >
+          <OverlayLabel show={showLabels}>{v}</OverlayLabel>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * Four stacked strips for banding / bit-depth checks:
+ *  1. 10 darkest shades (0–18, step 2) — black-crush & low-end banding
+ *  2. 10 brightest shades (237–255, step 2) — white-clip & high-end banding
+ *  3. 21-step grayscale ramp (0–255 in 5% steps)
+ *  4. smooth dark-to-white gradient (full bit depth)
+ * The three discrete strips label every shade with its 0–255 value.
+ */
+function GradientScreen({ showLabels }: { showLabels: boolean }) {
   return (
     <div className="flex h-full w-full flex-col">
-      <div className="flex flex-1">
-        {GRAD_BANDS.map((v, i) => (
-          <div key={i} className="flex-1" style={{ background: `rgb(${v}, ${v}, ${v})` }} />
-        ))}
-      </div>
+      <DiscreteBands values={GRAD_DARK} showLabels={showLabels} />
+      <DiscreteBands values={GRAD_LIGHT} showLabels={showLabels} />
+      <DiscreteBands values={GRAD_BANDS} showLabels={showLabels} />
       <div className="flex-1" style={{ background: 'linear-gradient(to right, #000, #fff)' }} />
     </div>
   )
@@ -260,7 +285,7 @@ function PatternContent({ pattern, live = false }: { pattern: Pattern; live?: bo
   // Labels stay on for the whole live view (not tied to the auto-hiding hint); the
   // tile-grid thumbnails pass live=false, so they render label-free.
   if (pattern.lines) return <SplitStripes orientation={pattern.lines} showLabels={live} />
-  if (pattern.render === 'gradient') return <GradientScreen />
+  if (pattern.render === 'gradient') return <GradientScreen showLabels={live} />
   if (pattern.render === 'gamma') return <GammaScreen />
   if (pattern.render === 'refresh') return live ? <RefreshRateScreen /> : <RefreshRatePreview />
   return null
