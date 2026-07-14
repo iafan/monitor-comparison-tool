@@ -11,8 +11,20 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { Intro } from './Intro'
+import { OverlayLabel } from './ui/OverlayLabel'
 import { useSwipeDown } from '../hooks/useSwipeDown'
+import { PRESETS } from '../constants'
 import type { VisibleAreaFrame } from '../types'
+
+/**
+ * Names a device resolution from the shared presets — e.g. `QHD — 2560 × 1440`
+ * for an exact match, `Custom — 1920 × 515` otherwise.
+ */
+function resolutionLabel(w: number, h: number): string {
+  const preset = PRESETS.find((p) => p.resWidth === w && p.resHeight === h)
+  const name = preset ? preset.label.split(' — ')[0] : 'Custom'
+  return `${name} — ${w} × ${h}`
+}
 
 /**
  * Crosshatch geometry test card drawn at the true device resolution: a square
@@ -20,8 +32,12 @@ import type { VisibleAreaFrame } from '../types'
  * circles to reveal aspect/roundness and pincushion/barrel distortion, and a
  * 1px white border hugging the very edge to check for overscan clipping.
  */
-function GeometryCanvas() {
+function GeometryCanvas({ onResolution }: { onResolution?: (w: number, h: number) => void }) {
   const ref = useRef<HTMLCanvasElement>(null)
+  // Keep the latest callback in a ref so reporting the resolution doesn't force
+  // the draw effect to re-run (and re-attach observers) on every parent render.
+  const onRes = useRef(onResolution)
+  onRes.current = onResolution
 
   useEffect(() => {
     const canvas = ref.current
@@ -44,6 +60,7 @@ function GeometryCanvas() {
       canvas.height = h
       canvas.style.width = `${cssW}px`
       canvas.style.height = `${cssH}px`
+      onRes.current?.(w, h)
       const ctx = canvas.getContext('2d')
       if (!ctx) return
 
@@ -351,6 +368,7 @@ interface Props {
 export function MonitorGeometry({ visibleFrame, setVisibleFrame }: Props) {
   const [active, setActive] = useState<Screen | null>(null)
   const [showHint, setShowHint] = useState(true)
+  const [res, setRes] = useState<{ w: number; h: number } | null>(null)
   const surfaceRef = useRef<HTMLDivElement>(null)
   const hintTimer = useRef<number | undefined>(undefined)
 
@@ -433,7 +451,12 @@ export function MonitorGeometry({ visibleFrame, setVisibleFrame }: Props) {
         role={active === 'geometry' ? 'img' : undefined}
         aria-label={active === 'geometry' ? 'Geometry test card' : undefined}
       >
-        {active === 'geometry' && <GeometryCanvas />}
+        {active === 'geometry' && <GeometryCanvas onResolution={(w, h) => setRes({ w, h })} />}
+        {active === 'geometry' && res && (
+          <OverlayLabel className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 tabular-nums">
+            {resolutionLabel(res.w, res.h)}
+          </OverlayLabel>
+        )}
         {active === 'geometry' && (
           <div
             className={`pointer-events-none absolute inset-x-0 top-0 flex justify-center p-4 transition-opacity duration-300 ${
