@@ -29,6 +29,7 @@ const GAMMA_PATCH = '#bcbcbc'
 
 const PATTERNS: Pattern[] = [
   { id: 'white', label: 'White', hint: 'Dead/stuck pixels, backlight bleed, dust', fill: '#ffffff' },
+  { id: 'gray', label: 'Gray', hint: 'Uniformity & backlight mura', fill: '#808080' },
   { id: 'black', label: 'Black', hint: 'Stuck (lit) pixels, backlight bleed', fill: '#000000' },
   { id: 'red', label: 'Red', hint: 'Subpixel faults, uniformity', fill: '#ff0000' },
   { id: 'green', label: 'Green', hint: 'Subpixel faults, uniformity', fill: '#00ff00' },
