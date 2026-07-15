@@ -409,7 +409,7 @@ export function MonitorGeometry({ visibleFrame, setVisibleFrame }: Props) {
   }, [active, close, pokeHint])
 
   const cardClass =
-    'flex w-full cursor-pointer flex-col gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] p-2 text-left'
+    'flex h-full w-full cursor-pointer flex-col gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] p-2 text-left'
 
   return (
     <section>

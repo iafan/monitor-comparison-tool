@@ -15,6 +15,8 @@ interface Pattern {
   fill?: string
   /** Line patterns render a split CSS-px vs device-px comparison instead. */
   lines?: Orientation
+  /** Scrolling-text screens bounce a paragraph along this axis (smearing test). */
+  scroll?: Orientation
   /** Composite screens rendered by a dedicated component. */
   render?: 'gradient' | 'gamma' | 'refresh'
 }
@@ -34,11 +36,13 @@ const PATTERNS: Pattern[] = [
   { id: 'red', label: 'Red', hint: 'Subpixel faults, uniformity', fill: '#ff0000' },
   { id: 'green', label: 'Green', hint: 'Subpixel faults, uniformity', fill: '#00ff00' },
   { id: 'blue', label: 'Blue', hint: 'Subpixel faults, uniformity', fill: '#0000ff' },
-  { id: 'vlines', label: 'Vertical lines (1px)', hint: 'CSS px vs device px — top / bottom', lines: 'vertical' },
-  { id: 'hlines', label: 'Horizontal lines (1px)', hint: 'CSS px vs device px — left / right', lines: 'horizontal' },
-  { id: 'gradient', label: 'Gradient', hint: 'Banding & bit depth — dark/light shades, stepped & smooth', render: 'gradient' },
-  { id: 'gamma', label: 'Gamma', hint: 'Patch melts into stripes at correct gamma', render: 'gamma' },
-  { id: 'refresh', label: 'Refresh rate', hint: 'Measured Hz; watch the box for stutter', render: 'refresh' },
+  { id: 'vlines', label: 'Vertical lines (1px)', hint: 'Sharpness, scaling & non-native resolution', lines: 'vertical' },
+  { id: 'hlines', label: 'Horizontal lines (1px)', hint: 'Sharpness, scaling & non-native resolution', lines: 'horizontal' },
+  { id: 'gradient', label: 'Gradient', hint: 'Banding & color bit depth', render: 'gradient' },
+  { id: 'gamma', label: 'Gamma', hint: 'Gamma accuracy (≈2.2)', render: 'gamma' },
+  { id: 'refresh', label: 'Refresh rate', hint: 'Refresh rate, stutter & tearing', render: 'refresh' },
+  { id: 'scrollv', label: 'Vertical text scrolling', hint: 'Motion smearing, ghosting & slow pixel response', scroll: 'vertical' },
+  { id: 'scrollh', label: 'Horizontal text scrolling', hint: 'Motion smearing, ghosting & slow pixel response', scroll: 'horizontal' },
 ]
 
 // The bouncing box advances a FIXED number of pixels per frame (not per second),
@@ -71,6 +75,34 @@ const GRAD_DARK = Array.from({ length: 10 }, (_, i) => i * 2)
 
 /** 10 brightest shades (237, 239, …, 255) — isolates white-clip and high-end banding. */
 const GRAD_LIGHT = Array.from({ length: 10 }, (_, i) => 237 + i * 2)
+
+// Real copy about panel smearing (a paragraph for the vertical screen, a shorter
+// line for the horizontal one): high-contrast moving edges make trailing smears
+// from slow pixel response easy to spot, and the text itself explains what to look
+// for on each panel type.
+const SMEAR_TEXT =
+  'Watch the moving edges for trailing smears. VA panels suffer the most, especially ' +
+  'in dark scenes — their slow gray-to-gray transitions leave a murky black smear ' +
+  'behind fast-moving shadows. IPS panels switch faster and more evenly, so motion ' +
+  'stays clearer, though aggressive overdrive can add a pale inverse-ghost outline. ' +
+  'OLED pixels change in microseconds, all but eliminating smear; any blur you still ' +
+  'see is sample-and-hold persistence, not slow response. If these letters trail or ' +
+  'ghost as they scroll, that is your panel’s real motion clarity.'
+const SMEAR_LINE = 'VA smears in the dark · IPS stays clean · OLED switches instantly'
+// The vertical screen renders SMEAR_COLS side-by-side columns of the paragraph; the
+// horizontal screen SMEAR_ROWS stacked copies of the line — each a single shade
+// ramping dark→white, centred as a block (so the middle copy sits at the centre).
+const SMEAR_COLS = 3
+const SMEAR_ROWS = 5
+
+/** Gray value for copy `i` of `n`, ramping from dark gray (48) to white (255). */
+function smearShade(i: number, n: number): number {
+  return Math.round(48 + (255 - 48) * (i / (n - 1)))
+}
+
+// Ease-in-out bounce duration scales with travel so the mid-travel speed (where
+// smearing shows most) stays roughly constant across screen sizes.
+const SCROLL_MS_PER_PX = 2.2
 
 /**
  * Paints alternating 1-device-pixel stripes on a canvas backed at the true
@@ -276,6 +308,93 @@ function RefreshRatePreview() {
 }
 
 /**
+ * Centered text that eases up/down (or left/right) to expose motion smearing and
+ * ghosting: trailing edges behind moving high-contrast text reveal slow pixel
+ * response and overdrive artifacts. Uses the Web Animations API with an
+ * ease-in-out, alternating bounce around the centered rest position — watch the
+ * fast mid-travel, where smearing peaks. The bounce always covers a good slice
+ * of the surface (so it moves even when the text fits), and grows to reveal the
+ * whole text when it overflows. Travel is re-measured on resize.
+ *
+ * Sizes in container-query units (cqh/cqw) so the exact same render is a true
+ * miniature in the tile grid; `animate` is off there (the tile is a still frame,
+ * like the other cards), on for the live full-screen surface.
+ */
+function ScrollTextScreen({ orientation, animate = true }: { orientation: Orientation; animate?: boolean }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+  const vertical = orientation === 'vertical'
+
+  useEffect(() => {
+    if (!animate) return
+    const container = containerRef.current
+    const content = contentRef.current
+    if (!container || !content) return
+
+    let anim: Animation | undefined
+    const start = () => {
+      anim?.cancel()
+      const extent = vertical ? container.clientHeight : container.clientWidth
+      const overflow = vertical
+        ? content.scrollHeight - container.clientHeight
+        : content.scrollWidth - container.clientWidth
+      // Bounce symmetrically about the centered rest position. Travel is at least
+      // ~40% of the surface so the text always visibly moves, and half the
+      // overflow when larger, so an over-tall/-wide block scrolls fully into view.
+      const travel = Math.max(extent * 0.4, overflow / 2)
+      if (travel <= 0) return
+      const axis = vertical ? 'Y' : 'X'
+      anim = content.animate(
+        [{ transform: `translate${axis}(${travel}px)` }, { transform: `translate${axis}(${-travel}px)` }],
+        {
+          duration: Math.max(2000, travel * 2 * SCROLL_MS_PER_PX),
+          direction: 'alternate',
+          iterations: Infinity,
+          easing: 'ease-in-out',
+        },
+      )
+    }
+
+    start()
+    const ro = new ResizeObserver(start)
+    ro.observe(container)
+    return () => {
+      ro.disconnect()
+      anim?.cancel()
+    }
+  }, [vertical, animate])
+
+  return (
+    <div
+      ref={containerRef}
+      className="flex h-full w-full items-center justify-center overflow-hidden bg-black [container-type:size]"
+    >
+      <div
+        ref={contentRef}
+        className={
+          vertical
+            ? 'flex gap-[4cqw] text-[3.6cqh] leading-[1.3] font-semibold will-change-transform'
+            : 'flex flex-col px-[6cqw] text-[11cqh] leading-[1.25] font-semibold will-change-transform'
+        }
+      >
+        {Array.from({ length: vertical ? SMEAR_COLS : SMEAR_ROWS }, (_, i) => {
+          const v = smearShade(i, vertical ? SMEAR_COLS : SMEAR_ROWS)
+          return vertical ? (
+            <div key={i} className="w-[22cqw] text-left" style={{ color: `rgb(${v}, ${v}, ${v})` }}>
+              {SMEAR_TEXT}
+            </div>
+          ) : (
+            <div key={i} className="whitespace-nowrap" style={{ color: `rgb(${v}, ${v}, ${v})` }}>
+              {SMEAR_LINE}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+/**
  * The single renderer for a pattern, used by both the preview tile and the
  * full-screen surface — it fills whatever container it's in, so the tile is a
  * true miniature screen (no scaling), not a separate approximation. `live`
@@ -286,6 +405,7 @@ function PatternContent({ pattern, live = false }: { pattern: Pattern; live?: bo
   // Labels stay on for the whole live view (not tied to the auto-hiding hint); the
   // tile-grid thumbnails pass live=false, so they render label-free.
   if (pattern.lines) return <SplitStripes orientation={pattern.lines} showLabels={live} />
+  if (pattern.scroll) return <ScrollTextScreen orientation={pattern.scroll} animate={live} />
   if (pattern.render === 'gradient') return <GradientScreen showLabels={live} />
   if (pattern.render === 'gamma') return <GammaScreen />
   if (pattern.render === 'refresh') return live ? <RefreshRateScreen /> : <RefreshRatePreview />
@@ -429,7 +549,7 @@ export function MonitorCheck({ screen, setScreen }: Props) {
             <button
               type="button"
               onClick={() => open(i)}
-              className="flex w-full cursor-pointer flex-col gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] p-2 text-left"
+              className="flex h-full w-full cursor-pointer flex-col gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] p-2 text-left"
             >
               <span
                 className={`relative block h-20 w-full overflow-hidden rounded-lg ${
