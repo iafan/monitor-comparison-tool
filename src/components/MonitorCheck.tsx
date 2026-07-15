@@ -103,6 +103,14 @@ const GAMUT_HUES = Array.from({ length: 36 }, (_, i) => {
   }
 })
 
+// Masks the cross-gamut reference overlay down to 2px sampling lines every 20px.
+// Each half anchors its mask to the centre seam and places the line at the far end
+// of each 20px cell, so the seam stays clear and the first line sits ~20px away on
+// both sides. The top half's seam is its bottom edge (tile upward, `to top`); the
+// bottom half's seam is its top edge (tile downward, `to bottom`).
+const GAMUT_LINE_MASK_TOP = 'repeating-linear-gradient(to top, transparent 0, transparent 18px, #000 18px, #000 20px)'
+const GAMUT_LINE_MASK_BOTTOM = 'repeating-linear-gradient(to bottom, transparent 0, transparent 18px, #000 18px, #000 20px)'
+
 // Real copy about panel smearing (a paragraph for the vertical screen, a shorter
 // line for the horizontal one): high-contrast moving edges make trailing smears
 // from slow pixel response easy to spot, and the text itself explains what to look
@@ -244,24 +252,60 @@ function GradientScreen({ showLabels }: { showLabels: boolean }) {
 /**
  * Wide-gamut vs sRGB: 36 fully-saturated hues from the colour wheel, shown in
  * sRGB (top half) and the identical nominal values in Display P3 (bottom half).
- * On a colour-managed wide-gamut panel the P3 band is noticeably more saturated;
- * on an sRGB panel P3 is clamped and the halves look the same.
+ * Each band peaks at full saturation on the centre seam where the halves meet
+ * and fades to black at the outer screen edge — the P3 fade stays in P3 (so its
+ * extra saturation shows across the whole band, not just at the seam). On a
+ * colour-managed wide-gamut panel the P3 band is noticeably more saturated; on
+ * an sRGB panel P3 is clamped and the halves look the same.
  */
 function GamutScreen({ showLabels }: { showLabels: boolean }) {
   const centerLabel = 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2'
   return (
     <div className="flex h-full w-full flex-col">
+      {/* Top: black at the screen edge → full colour at the seam below. Carries
+          2px P3 reference lines (the mirror of the wide-gamut band's sRGB lines),
+          so each half shows the other gamut sampled along its full luminance. */}
       <div className="relative flex flex-1">
         {GAMUT_HUES.map((h, i) => (
-          <div key={i} className="flex-1" style={{ background: h.srgb }} />
+          <div
+            key={i}
+            className="relative flex-1"
+            style={{ background: `linear-gradient(to bottom in srgb, #000, ${h.srgb})` }}
+          >
+            <div
+              className="absolute inset-y-0 left-[20%] right-[20%]"
+              style={{
+                background: `linear-gradient(to bottom in display-p3, color(display-p3 0 0 0), ${h.p3})`,
+                WebkitMaskImage: GAMUT_LINE_MASK_TOP,
+                maskImage: GAMUT_LINE_MASK_TOP,
+              }}
+            />
+          </div>
         ))}
         <OverlayLabel className={centerLabel} show={showLabels}>
           sRGB
         </OverlayLabel>
       </div>
+      {/* Bottom: full colour at the seam above → black at the screen edge. Each
+          band carries 2px sRGB reference lines (every 20px) from the matching
+          sRGB→black gradient, so the P3-vs-sRGB gap is visible at every luminance,
+          not only at peak saturation. */}
       <div className="relative flex flex-1">
         {GAMUT_HUES.map((h, i) => (
-          <div key={i} className="flex-1" style={{ background: h.p3 }} />
+          <div
+            key={i}
+            className="relative flex-1"
+            style={{ background: `linear-gradient(to bottom in display-p3, ${h.p3}, color(display-p3 0 0 0))` }}
+          >
+            <div
+              className="absolute inset-y-0 left-[20%] right-[20%]"
+              style={{
+                background: `linear-gradient(to bottom in srgb, ${h.srgb}, #000)`,
+                WebkitMaskImage: GAMUT_LINE_MASK_BOTTOM,
+                maskImage: GAMUT_LINE_MASK_BOTTOM,
+              }}
+            />
+          </div>
         ))}
         <OverlayLabel className={centerLabel} show={showLabels}>
           Wide-gamut
