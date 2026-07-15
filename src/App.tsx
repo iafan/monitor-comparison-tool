@@ -1,8 +1,9 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { TopMenu } from './components/TopMenu'
 import { SettingsModal } from './components/SettingsModal'
 import { UpdatePrompt } from './components/UpdatePrompt'
 import { useAppState } from './hooks/useAppState'
+import { isStandalone } from './lib/pwa'
 
 // Every tool is code-split into its own chunk so the initial load is just the
 // shell (menu + state). The active tool streams in behind a loading fallback,
@@ -26,10 +27,26 @@ function ToolLoading() {
 export function App() {
   const app = useAppState()
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const standalone = isStandalone()
+
+  // In a normal browser tab, behave like a plain website: never keep a service
+  // worker around. Tear down any registration a previous build left for this
+  // origin (plus its caches) so future loads are served fresh from the network
+  // instead of a cached app shell. The installed app (standalone) keeps its
+  // worker and offline cache via <UpdatePrompt/> below.
+  useEffect(() => {
+    if (standalone || !('serviceWorker' in navigator)) return
+    navigator.serviceWorker.getRegistrations().then((regs) => {
+      if (regs.length === 0) return
+      Promise.all(regs.map((r) => r.unregister())).then(() => {
+        if ('caches' in window) caches.keys().then((keys) => keys.forEach((k) => caches.delete(k)))
+      })
+    })
+  }, [standalone])
 
   return (
     <>
-      <UpdatePrompt />
+      {standalone && <UpdatePrompt />}
       <TopMenu tool={app.tool} onToolChange={app.setTool} theme={app.theme} onOpenSettings={() => setSettingsOpen(true)} />
       {settingsOpen && (
         <SettingsModal
