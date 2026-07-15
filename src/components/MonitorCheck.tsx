@@ -18,7 +18,7 @@ interface Pattern {
   /** Scrolling-text screens bounce a paragraph along this axis (smearing test). */
   scroll?: Orientation
   /** Composite screens rendered by a dedicated component. */
-  render?: 'gradient' | 'gamma' | 'refresh'
+  render?: 'gradient' | 'gamma' | 'gamut' | 'refresh'
 }
 
 /**
@@ -40,6 +40,7 @@ const PATTERNS: Pattern[] = [
   { id: 'hlines', label: 'Horizontal lines (1px)', hint: 'Sharpness, scaling & non-native resolution', lines: 'horizontal' },
   { id: 'gradient', label: 'Gradient', hint: 'Banding & color bit depth', render: 'gradient' },
   { id: 'gamma', label: 'Gamma', hint: 'Gamma accuracy (≈2.2)', render: 'gamma' },
+  { id: 'gamut', label: 'Color gamut', hint: 'Wide-gamut (P3) coverage & color management', render: 'gamut' },
   { id: 'refresh', label: 'Refresh rate', hint: 'Refresh rate, stutter & tearing', render: 'refresh' },
   { id: 'scrollv', label: 'Vertical text scrolling', hint: 'Motion smearing, ghosting & slow pixel response', scroll: 'vertical' },
   { id: 'scrollh', label: 'Horizontal text scrolling', hint: 'Motion smearing, ghosting & slow pixel response', scroll: 'horizontal' },
@@ -75,6 +76,32 @@ const GRAD_DARK = Array.from({ length: 10 }, (_, i) => i * 2)
 
 /** 10 brightest shades (237, 239, …, 255) — isolates white-clip and high-end banding. */
 const GRAD_LIGHT = Array.from({ length: 10 }, (_, i) => 237 + i * 2)
+
+/** Fully-saturated hue (HSL s=100%, l=50%) → its RGB components in 0..1. */
+function hueToRgb(h: number): [number, number, number] {
+  const x = 1 - Math.abs(((h / 60) % 2) - 1)
+  const table: [number, number, number][] = [
+    [1, x, 0],
+    [x, 1, 0],
+    [0, 1, x],
+    [0, x, 1],
+    [x, 0, 1],
+    [1, 0, x],
+  ]
+  return table[Math.floor(h / 60) % 6]
+}
+
+// 36 hues around the wheel, each as an sRGB fill and the SAME nominal components
+// fed to Display P3. Identical numbers, wider primaries: on a colour-managed
+// wide-gamut panel the P3 band is visibly more saturated; on an sRGB panel P3 is
+// clamped and the two bands match — which is exactly the read on the display.
+const GAMUT_HUES = Array.from({ length: 36 }, (_, i) => {
+  const [r, g, b] = hueToRgb(i * 10)
+  return {
+    srgb: `rgb(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)})`,
+    p3: `color(display-p3 ${r.toFixed(4)} ${g.toFixed(4)} ${b.toFixed(4)})`,
+  }
+})
 
 // Real copy about panel smearing (a paragraph for the vertical screen, a shorter
 // line for the horizontal one): high-contrast moving edges make trailing smears
@@ -210,6 +237,36 @@ function GradientScreen({ showLabels }: { showLabels: boolean }) {
       <DiscreteBands values={GRAD_LIGHT} showLabels={showLabels} />
       <DiscreteBands values={GRAD_BANDS} showLabels={showLabels} />
       <div className="flex-1" style={{ background: 'linear-gradient(to right, #000, #fff)' }} />
+    </div>
+  )
+}
+
+/**
+ * Wide-gamut vs sRGB: 36 fully-saturated hues from the colour wheel, shown in
+ * sRGB (top half) and the identical nominal values in Display P3 (bottom half).
+ * On a colour-managed wide-gamut panel the P3 band is noticeably more saturated;
+ * on an sRGB panel P3 is clamped and the halves look the same.
+ */
+function GamutScreen({ showLabels }: { showLabels: boolean }) {
+  const centerLabel = 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2'
+  return (
+    <div className="flex h-full w-full flex-col">
+      <div className="relative flex flex-1">
+        {GAMUT_HUES.map((h, i) => (
+          <div key={i} className="flex-1" style={{ background: h.srgb }} />
+        ))}
+        <OverlayLabel className={centerLabel} show={showLabels}>
+          sRGB
+        </OverlayLabel>
+      </div>
+      <div className="relative flex flex-1">
+        {GAMUT_HUES.map((h, i) => (
+          <div key={i} className="flex-1" style={{ background: h.p3 }} />
+        ))}
+        <OverlayLabel className={centerLabel} show={showLabels}>
+          Wide-gamut
+        </OverlayLabel>
+      </div>
     </div>
   )
 }
@@ -407,6 +464,7 @@ function PatternContent({ pattern, live = false }: { pattern: Pattern; live?: bo
   if (pattern.lines) return <SplitStripes orientation={pattern.lines} showLabels={live} />
   if (pattern.scroll) return <ScrollTextScreen orientation={pattern.scroll} animate={live} />
   if (pattern.render === 'gradient') return <GradientScreen showLabels={live} />
+  if (pattern.render === 'gamut') return <GamutScreen showLabels={live} />
   if (pattern.render === 'gamma') return <GammaScreen />
   if (pattern.render === 'refresh') return live ? <RefreshRateScreen /> : <RefreshRatePreview />
   return null
