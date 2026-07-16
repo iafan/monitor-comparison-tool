@@ -198,10 +198,14 @@ function HalfLabel({ text, show }: { text: string; show: boolean }) {
 function SplitStripes({ orientation, showLabels }: { orientation: Orientation; showLabels: boolean }) {
   // Vertical lines split top/bottom (stacked); horizontal lines split left/right.
   const stack = orientation === 'vertical'
+  // Surface the device-pixel ratio when it isn't 1 — a non-integer ratio is why
+  // the CSS-px stripes can't map cleanly to physical pixels.
+  const dpr = window.devicePixelRatio || 1
+  const cssLabel = dpr === 1 ? 'CSS px' : `CSS px (ratio = ${Math.round(dpr * 1000) / 1000})`
   return (
     <div className={`flex h-full w-full ${stack ? 'flex-col' : 'flex-row'}`}>
       <div className="relative flex-1 overflow-hidden" style={{ background: cssStripes(orientation) }}>
-        <HalfLabel text="CSS px" show={showLabels} />
+        <HalfLabel text={cssLabel} show={showLabels} />
       </div>
       {/* 1px divider between the two halves — horizontal when stacked, vertical when side-by-side. */}
       <div className={`flex-none bg-black ${stack ? 'h-px w-full' : 'h-full w-px'}`} />
