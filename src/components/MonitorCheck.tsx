@@ -62,12 +62,6 @@ function snapRate(hz: number): number {
   return Math.abs(best - hz) / best <= 0.06 ? best : Math.round(hz)
 }
 
-/** CSS-pixel repeating stripes: 1px black, 1px white. */
-function cssStripes(orientation: Orientation): string {
-  const dir = orientation === 'vertical' ? 'to right' : 'to bottom'
-  return `repeating-linear-gradient(${dir}, #000, #000 1px, #fff 1px, #fff 2px)`
-}
-
 /** Stepped grayscale ramp, 20 bands evenly spanning 0–255. */
 const GRAD_BANDS = Array.from({ length: 20 }, (_, i) => Math.round((i / 19) * 255))
 
@@ -139,12 +133,27 @@ function smearShade(i: number, n: number): number {
 // smearing shows most) stays roughly constant across screen sizes.
 const SCROLL_MS_PER_PX = 2.2
 
+// Supersample factor for the CSS-resolution stripes. At a fractional device-pixel
+// ratio, back the canvas at ceil(dpr)× CSS size and display at CSS size, so the
+// browser MINIFIES the big bitmap to the device grid — a WebRender path that
+// renders the fine pattern cleanly, unlike magnifying it (which glitches at
+// fractional ratios on some Firefox/Linux/GPU combos). At an INTEGER ratio the
+// upscale aligns exactly to the device grid and never glitches, so skip the
+// supersample entirely (1×) and let it magnify — crisp, and a smaller canvas.
+const stripeSupersample = (): number => {
+  const dpr = window.devicePixelRatio || 1
+  return Number.isInteger(dpr) ? 1 : Math.ceil(dpr)
+}
+
 /**
- * Paints alternating 1-device-pixel stripes on a canvas backed at the true
- * device resolution, so on HiDPI panels these are genuinely 1px wide (unlike
- * the CSS gradient, where 1 CSS px spans devicePixelRatio device pixels).
+ * Paints alternating 1-pixel black/white stripes on a canvas. By default the
+ * canvas is backed at the true device resolution, so on HiDPI panels the lines
+ * are genuinely 1 device pixel wide. With `cssResolution`, the canvas is backed
+ * at ceil(dpr)× the CSS resolution (stripes that many px wide) and displayed at
+ * CSS size, so the browser downsamples it to the physical grid — dodging a
+ * Firefox/WebRender fractional-ratio artifact seen when magnifying the pattern.
  */
-function DeviceStripes({ orientation }: { orientation: Orientation }) {
+function StripeCanvas({ orientation, cssResolution = false }: { orientation: Orientation; cssResolution?: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -153,23 +162,47 @@ function DeviceStripes({ orientation }: { orientation: Orientation }) {
     if (!canvas || !parent) return
 
     const draw = () => {
-      const dpr = window.devicePixelRatio || 1
-      const rect = parent.getBoundingClientRect()
-      const w = Math.max(1, Math.round(rect.width * dpr))
-      const h = Math.max(1, Math.round(rect.height * dpr))
-      canvas.width = w
-      canvas.height = h
-      canvas.style.width = `${rect.width}px`
-      canvas.style.height = `${rect.height}px`
       const ctx = canvas.getContext('2d')
       if (!ctx) return
-      ctx.fillStyle = '#fff'
-      ctx.fillRect(0, 0, w, h)
-      ctx.fillStyle = '#000'
-      if (orientation === 'vertical') {
-        for (let x = 0; x < w; x += 2) ctx.fillRect(x, 0, 1, h)
+      const rect = parent.getBoundingClientRect()
+      if (cssResolution) {
+        // Supersample only the stripe axis; the uniform axis stays 1:1 in CSS px.
+        const vertical = orientation === 'vertical'
+        const cssW = Math.max(1, Math.round(rect.width))
+        const cssH = Math.max(1, Math.round(rect.height))
+        const s = stripeSupersample()
+        const w = vertical ? cssW * s : cssW
+        const h = vertical ? cssH : cssH * s
+        canvas.width = w
+        canvas.height = h
+        canvas.style.width = `${cssW}px`
+        canvas.style.height = `${cssH}px`
+        canvas.style.imageRendering = 'auto' // smooth minification (the point)
+        ctx.fillStyle = '#fff'
+        ctx.fillRect(0, 0, w, h)
+        ctx.fillStyle = '#000'
+        if (vertical) {
+          for (let x = 0; x < w; x += 2 * s) ctx.fillRect(x, 0, s, h)
+        } else {
+          for (let y = 0; y < h; y += 2 * s) ctx.fillRect(0, y, w, s)
+        }
       } else {
-        for (let y = 0; y < h; y += 2) ctx.fillRect(0, y, w, 1)
+        const dpr = window.devicePixelRatio || 1
+        const w = Math.max(1, Math.round(rect.width * dpr))
+        const h = Math.max(1, Math.round(rect.height * dpr))
+        canvas.width = w
+        canvas.height = h
+        canvas.style.width = `${rect.width}px`
+        canvas.style.height = `${rect.height}px`
+        canvas.style.imageRendering = 'auto'
+        ctx.fillStyle = '#fff'
+        ctx.fillRect(0, 0, w, h)
+        ctx.fillStyle = '#000'
+        if (orientation === 'vertical') {
+          for (let x = 0; x < w; x += 2) ctx.fillRect(x, 0, 1, h)
+        } else {
+          for (let y = 0; y < h; y += 2) ctx.fillRect(0, y, w, 1)
+        }
       }
     }
 
@@ -181,7 +214,7 @@ function DeviceStripes({ orientation }: { orientation: Orientation }) {
       ro.disconnect()
       window.removeEventListener('resize', draw)
     }
-  }, [orientation])
+  }, [orientation, cssResolution])
 
   return <canvas ref={ref} className="block" />
 }
@@ -204,13 +237,14 @@ function SplitStripes({ orientation, showLabels }: { orientation: Orientation; s
   const cssLabel = dpr === 1 ? 'CSS px' : `CSS px (ratio = ${Math.round(dpr * 1000) / 1000})`
   return (
     <div className={`flex h-full w-full ${stack ? 'flex-col' : 'flex-row'}`}>
-      <div className="relative flex-1 overflow-hidden" style={{ background: cssStripes(orientation) }}>
+      <div className="relative flex-1 overflow-hidden bg-white">
+        <StripeCanvas orientation={orientation} cssResolution />
         <HalfLabel text={cssLabel} show={showLabels} />
       </div>
       {/* 1px divider between the two halves — horizontal when stacked, vertical when side-by-side. */}
       <div className={`flex-none bg-black ${stack ? 'h-px w-full' : 'h-full w-px'}`} />
       <div className="relative flex-1 overflow-hidden bg-white">
-        <DeviceStripes orientation={orientation} />
+        <StripeCanvas orientation={orientation} />
         <HalfLabel text="Device px" show={showLabels} />
       </div>
     </div>
@@ -323,7 +357,7 @@ function GamutScreen({ showLabels }: { showLabels: boolean }) {
 function GammaScreen() {
   return (
     <div className="relative h-full w-full bg-white">
-      <DeviceStripes orientation="vertical" />
+      <StripeCanvas orientation="vertical" />
       <div
         className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
         style={{ width: '25%', height: '25%', background: GAMMA_PATCH }}
