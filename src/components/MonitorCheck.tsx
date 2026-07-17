@@ -133,17 +133,13 @@ function smearShade(i: number, n: number): number {
 // smearing shows most) stays roughly constant across screen sizes.
 const SCROLL_MS_PER_PX = 2.2
 
-// Supersample factor for the CSS-resolution stripes. At a fractional device-pixel
-// ratio, back the canvas at ceil(dpr)× CSS size and display at CSS size, so the
-// browser MINIFIES the big bitmap to the device grid — a WebRender path that
-// renders the fine pattern cleanly, unlike magnifying it (which glitches at
-// fractional ratios on some Firefox/Linux/GPU combos). At an INTEGER ratio the
-// upscale aligns exactly to the device grid and never glitches, so skip the
-// supersample entirely (1×) and let it magnify — crisp, and a smaller canvas.
-const stripeSupersample = (): number => {
-  const dpr = window.devicePixelRatio || 1
-  return Number.isInteger(dpr) ? 1 : Math.ceil(dpr)
-}
+// Supersample factor for the CSS-resolution stripes: ceil(dpr). Back the canvas at
+// this multiple of the CSS size and display it at CSS size, so it's never magnified
+// onto the device grid (magnifying a 1px pattern to the grid renders unevenly / gray
+// across engines). At an INTEGER ratio ceil(dpr) == dpr, so the stripe-axis backing
+// equals the device resolution — an exact 1:1 map, crisp. At a FRACTIONAL ratio it
+// exceeds dpr, so the browser minifies the bigger bitmap down — clean.
+const stripeSupersample = (): number => Math.max(1, Math.ceil(window.devicePixelRatio || 1))
 
 /**
  * Paints alternating 1-pixel black/white stripes on a canvas. By default the
@@ -166,21 +162,25 @@ function StripeCanvas({ orientation, cssResolution = false }: { orientation: Ori
       if (!ctx) return
       const rect = parent.getBoundingClientRect()
       if (cssResolution) {
-        // Supersample only the stripe axis; the uniform axis stays 1:1 in CSS px.
+        // Fill the parent's exact (fractional) size, like the device half — using a
+        // rounded display width instead leaves a hairline gap at the edge that shows
+        // the backdrop (visible against the divider in the small preview tiles).
+        // Supersample the stripe axis by ceil(dpr) so the browser minifies (or maps
+        // 1:1) rather than magnifies; the uniform axis is drawn at device resolution.
         const vertical = orientation === 'vertical'
-        const cssW = Math.max(1, Math.round(rect.width))
-        const cssH = Math.max(1, Math.round(rect.height))
+        const dpr = window.devicePixelRatio || 1
         const s = stripeSupersample()
-        const w = vertical ? cssW * s : cssW
-        const h = vertical ? cssH : cssH * s
+        const w = Math.max(1, Math.round(rect.width * (vertical ? s : dpr)))
+        const h = Math.max(1, Math.round(rect.height * (vertical ? dpr : s)))
         canvas.width = w
         canvas.height = h
-        canvas.style.width = `${cssW}px`
-        canvas.style.height = `${cssH}px`
+        canvas.style.width = `${rect.width}px`
+        canvas.style.height = `${rect.height}px`
         canvas.style.imageRendering = 'auto' // smooth minification (the point)
         ctx.fillStyle = '#fff'
         ctx.fillRect(0, 0, w, h)
         ctx.fillStyle = '#000'
+        // One CSS px along the stripe axis spans `s` backing px.
         if (vertical) {
           for (let x = 0; x < w; x += 2 * s) ctx.fillRect(x, 0, s, h)
         } else {
