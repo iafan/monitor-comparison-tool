@@ -33,6 +33,7 @@ import {
   uid,
 } from '../lib/storage'
 import { applyDecoded, decodeState, encodeState, type AppState } from '../lib/urlState'
+import { track } from '../lib/analytics'
 import { monitorKey } from '../lib/monitorsIo'
 
 function systemTheme(): Theme {
@@ -208,8 +209,18 @@ export function useAppState(): AppStore {
   }, [])
 
   const addMyMonitor = useCallback(
-    (input: MonitorInput) =>
-      mutateLibrary((list) => [...list, { ...input, id: uid(), visible: true }]),
+    (input: MonitorInput) => {
+      mutateLibrary((list) => [...list, { ...input, id: uid(), visible: true }])
+      // Technical parameters only — the name may be personal, so it's omitted.
+      track('my_monitor_add', {
+        resolution: `${input.resWidth}x${input.resHeight}`,
+        diagonal: input.diagonal,
+        curved: input.curveRadius != null,
+        source: input.modelId ? 'model' : input.classId ? 'class' : 'custom',
+        ...(input.modelId ? { modelId: input.modelId } : {}),
+        ...(input.classId ? { classId: input.classId } : {}),
+      })
+    },
     [mutateLibrary],
   )
 
@@ -226,6 +237,7 @@ export function useAppState(): AppStore {
 
   const importMyMonitors = useCallback(
     (inputs: MonitorInput[]) => {
+      track('my_monitors_import')
       const seen = new Set(state.myMonitors.map(monitorKey))
       const added: Monitor[] = []
       let skipped = 0

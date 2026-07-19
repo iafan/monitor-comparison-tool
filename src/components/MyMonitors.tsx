@@ -6,6 +6,7 @@ import { MonitorCustomForm } from './MonitorCustomForm'
 import { MonitorList } from './MonitorList'
 import { MonitorsImportDialog } from './MonitorsImportDialog'
 import { MonitorsSaveDialog } from './MonitorsSaveDialog'
+import { track } from '../lib/analytics'
 import type { Monitor, MonitorInput, Unit } from '../types'
 
 interface Props {
@@ -63,7 +64,14 @@ export function MyMonitors({
       {/* Back up / transfer the library as JSON. Save only makes sense with entries. */}
       <div className="flex gap-4">
         {myMonitors.length > 0 && (
-          <button type="button" onClick={() => setIo('save')} className={linkClass}>
+          <button
+            type="button"
+            onClick={() => {
+              track('my_monitors_export')
+              setIo('save')
+            }}
+            className={linkClass}
+          >
             Save
           </button>
         )}
