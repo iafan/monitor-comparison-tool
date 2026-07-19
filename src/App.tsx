@@ -4,6 +4,7 @@ import { SettingsModal } from './components/SettingsModal'
 import { UpdatePrompt } from './components/UpdatePrompt'
 import { useAppState } from './hooks/useAppState'
 import { isStandalone } from './lib/pwa'
+import { track } from './lib/analytics'
 
 // Every tool is code-split into its own chunk so the initial load is just the
 // shell (menu + state). The active tool streams in behind a loading fallback,
@@ -28,6 +29,16 @@ export function App() {
   const app = useAppState()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const standalone = isStandalone()
+
+  useEffect(() => {
+    track('tool_open', { tool: app.tool })
+  }, [app.tool])
+
+  useEffect(() => {
+    if (app.tool === 'check' && app.checkScreen) {
+      track('screen_open', { tool: 'check', screen: app.checkScreen })
+    }
+  }, [app.tool, app.checkScreen])
 
   // In a normal browser tab, behave like a plain website: never keep a service
   // worker around. Tear down any registration a previous build left for this

@@ -15,6 +15,8 @@ const SITE = 'https://monitorture.com'
 // respect a saved light/dark choice with no flash. Assets are one level up.
 const THEME_SCRIPT = `try{var t=localStorage.getItem('monitor-comparison:theme:v1');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}`
 
+const ANALYTICS_SCRIPT = `window.analytics=window.analytics||{track:function(){(this.q=this.q||[]).push(arguments)}}`
+
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
 function documentHtml(page: StaticPage, body: string, cssHref: string): string {
@@ -27,6 +29,8 @@ function documentHtml(page: StaticPage, body: string, cssHref: string): string {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <script>${THEME_SCRIPT}</script>
+    <script>${ANALYTICS_SCRIPT}</script>
+    <script async src="https://events.monitorture.com/api.js" data-auto-pageview></script>
     <title>${title}</title>
     <meta name="description" content="${desc}" />
     <link rel="canonical" href="${url}" />

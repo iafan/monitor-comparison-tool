@@ -13,6 +13,7 @@ import {
 import { Intro } from './Intro'
 import { OverlayLabel } from './ui/OverlayLabel'
 import { useSwipeDown } from '../hooks/useSwipeDown'
+import { track } from '../lib/analytics'
 import { PRESETS } from '../constants'
 import type { VisibleAreaFrame } from '../types'
 
@@ -374,6 +375,7 @@ export function MonitorGeometry({ visibleFrame, setVisibleFrame }: Props) {
 
   const open = useCallback((screen: Screen) => {
     setActive(screen)
+    track('screen_open', { tool: 'geometry', screen })
     surfaceRef.current?.requestFullscreen?.().catch(() => {})
   }, [])
 

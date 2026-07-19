@@ -28,19 +28,6 @@ export const SIMULATOR_HEAD_ANGLE_MAX = 75 // horizontal head turn (yaw)
 export const SIMULATOR_PITCH_MAX = 30 // vertical head tilt (look up/down)
 
 /** Valid Monitor Check screen ids (mirrors PATTERNS in MonitorCheck); used to validate the URL `scr` value. */
-export const CHECK_SCREEN_IDS = [
-  'white',
-  'black',
-  'red',
-  'green',
-  'blue',
-  'vlines',
-  'hlines',
-  'gradient',
-  'gamma',
-  'refresh',
-] as const
-
 /** Desk defaults ~140 × 70 cm, stored in inches; monitors centered near the back. */
 export const DEFAULT_PREFERENCES: Preferences = {
   unit: 'in',

@@ -19,7 +19,8 @@
 // are percent-encoded with spaces rendered as `+`; every structural delimiter
 // (`& = ; :`) is a character encodeURIComponent escapes, so names can't collide.
 // Theme is intentionally NOT serialized — it's the viewer's own preference.
-import { CHECK_SCREEN_IDS, DEFAULT_MONITORS, DEFAULT_SIMULATOR } from '../constants'
+import { DEFAULT_MONITORS, DEFAULT_SIMULATOR } from '../constants'
+import { CHECK_SCREEN_IDS } from './checkScreens'
 import { MONITOR_MODELS, classDefaultName, getClass, resolveSelection } from '../data'
 import { uid } from './storage'
 import type {
@@ -236,7 +237,7 @@ const SETTINGS: Setting<any>[] = [
       set: (d, v) => (d.checkScreen = v),
       isDefault: (v) => v == null,
       encode: (v) => v as string,
-      decode: (raw) => ((CHECK_SCREEN_IDS as readonly string[]).includes(raw) ? raw : undefined),
+      decode: (raw) => (CHECK_SCREEN_IDS.includes(raw) ? raw : undefined),
       relevant: (s) => s.tool === 'check',
     } as Setting<string | null>,
     {
